@@ -43,9 +43,7 @@ Schedule**
 Split
 up into mini-deliverables that are timeboxed into 2 weeks. 
 
-Mini-deliverable 1: 
-
-**Research and Testing** (mainly complete minimum viable product)
+**Mini-deliverable 1: Research and Testing** (mainly complete minimum viable product)
 
         Mar 23 - Apr 6
 
@@ -53,28 +51,22 @@ Mini-deliverable 1:
 
         Hannah gone Apr 1-4
 
-Mini-deliverable 2:
-
-**Definitely complete minimum viable product by end of this timeframe**
+**Mini-deliverable 2: Definitely complete minimum viable product by end of this timeframe**
 
         Apr 6 - 20
 
         Kai gone Apr 7-13
 
-Mini-deliverable 3:
-
-**Time for exploration + reach goal**
+**Mini-deliverable 3: Time for exploration + reach goal**
 
         Apr 20 - 30
 
 **Collaboration
 Plan**
 
-    Split
-tasks and continuously integrate
+Split tasks and continuously integrate
 
-    Pair
-program when integrating individual works
+Pair program when integrating individual works
 
 **Risks**
 
@@ -87,8 +79,7 @@ Successful music analysis
 
 Getting the mix to sound good/natural like in real life
 
-**Additional
-Course 
+**Additional Course Content**
 
 Team Github organization (branching, merging etiquette)
 
