@@ -10,8 +10,7 @@ Proposal
 **The
 Big Idea**
 
-    We
-are investigating automated music analysis with our project. We will
+We are investigating automated music analysis with our project. We will
 attempt to analyze traits of song (tempo, timbre, chords, pitch) and
 note similarities to other songs in a library. Our minimum viable
 product will be to generate quantitative analysis of the various
@@ -44,42 +43,29 @@ Schedule**
 Split
 up into mini-deliverables that are timeboxed into 2 weeks. 
 
-    Mini-deliverable
-1: 
+Mini-deliverable 1: 
 
-**Research
-+ Testing** (mainly complete minimum
-viable product)
+**Research and Testing** (mainly complete minimum viable product)
 
-        Mar
-23 - Apr 6
+        Mar 23 - Apr 6
 
-        Wilson
-gone Mar 23-30
+        Wilson gone Mar 23-30
 
-        Hannah
-gone Apr 1-4
+        Hannah gone Apr 1-4
 
-    Mini-deliverable
-2:
+Mini-deliverable 2:
 
-**      Definitely
-complete minimum viable product by end of this timeframe**
+**Definitely complete minimum viable product by end of this timeframe**
 
-        Apr
-6 - 20
+        Apr 6 - 20
 
-        Kai
-gone Apr 7-13
+        Kai gone Apr 7-13
 
-    Mini-deliverable
-3:
+Mini-deliverable 3:
 
-**      Time
-for exploration + reach goal**
+**Time for exploration + reach goal**
 
-        Apr
-20 - 30
+        Apr 20 - 30
 
 **Collaboration
 Plan**
@@ -95,20 +81,15 @@ program when integrating individual works
 Learning
 a library (dependent on finding a suitable library)
 
-    Team
-members’ absences
+Team members’ absences
 
-    Successful
-music analysis
+Successful music analysis
 
-    Getting
-the mix to sound good/natural like in real life
+Getting the mix to sound good/natural like in real life
 
 **Additional
-Course Content**
+Course 
 
-    Team
-Github organization (branching, merging etiquette)
+Team Github organization (branching, merging etiquette)
 
-    Modular
-programming: how to split code into different folders/files
+Modular programming: how to split code into different folders/files
