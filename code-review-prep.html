@@ -1,0 +1,51 @@
+<!DOCTYPE html><html><meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Code Review Reflection</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+</head><body>
+<h1 id="framing-and-preparation-code-review">Framing and Preparation: Code Review</h1>
+<p>Hannah Fowler, Kai Levy, Hieu Nguyen, Wilson Tang
+Software Design 02, Spring ‘15</p>
+<p>Background</p>
+<p>We are DJ Phat Enchantah. Our goal is to create a DJ that will take your music and create the swaggiest, most hip mix of your songs.  </p>
+<p>Echonest:
+    We recently discovered Echonest following the design review. It contains a multitude 
+    of libraries for music developers across different platforms. Moreover, its API holds an 
+    array of data consisting of a song’s components such as its beat, pitch, key, etc. 
+Echonest Remix: 
+    What Echonest offers that does some incredible things is its Echonest Remix API. This 
+    allows someone to “remix, re-edit, and reimagine any piece of music and video.” 
+Some examples people have created using remix: </p>
+<ul>
+<li>play a song forever</li>
+<li>reversing everything in a song</li>
+<li>beat matching</li>
+</ul>
+<p>What we plan to talk about:</p>
+<ul>
+<li>We have created a macro-layout of our code, separated into three sections: 
+API (data retrieval) → we will show you this during the review </li>
+<li>Analyzing songs (for doing cool things with it)**</li>
+<li>Main code (for putting everything together) </li>
+</ul>
+<p>Main things to think about: </p>
+<ul>
+<li>storing the data we retrieve (We have thought of something but we want your
+unbiased opinion on it, so please think about it. Lists? Dictionaries? Tuples? A
+combination?) </li>
+<li>analysis of the data** (best way to find the chorus? Default time for song snippet? 
+Knowing when to transition? What transitions to use: fade-ins?) </li>
+</ul>
+<p>**We will show an example of the code at this point and talk through it</p>
+
+</body></html>
