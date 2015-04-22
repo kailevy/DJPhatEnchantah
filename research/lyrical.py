@@ -1,12 +1,12 @@
 """
 Trying out lyrics stuff
-http://test.lyricfind.com/api_service/lyric.do?apikey=87c94e1a862dcd6ccb9fe4f4c5675007&lrckey=338e17628d2c45501a8ef6168a3dc115&territory=US&reqtype=default&trackid=amg:2033&format=lrc
 """
 
 import sys
 import urllib2
 import os
 import json
+import math
 from pyechonest import song
 
 DISPLAY_KEY = os.environ.get('LYRICFIND_DISPLAY_API_KEY')
@@ -32,46 +32,87 @@ def make_lrc_url(artist,title):
     url = 'http://test.lyricfind.com/api_service/lyric.do?apikey=%s&lrckey=%s&territory=US&reqtype=default\
 &trackid=artistname:%s,trackname:%s&format=lrc&output=json' %(DISPLAY_KEY,LRC_KEY,
         artist.replace(' ','+'),title.replace(' ','+'))
-
     return url
 
 def harvest_lyrics(json):
+    """takes the lyrics part of the json"""
     return json['track']['lyrics']
 
 def harvest_lrc(json):
+    """takes the lrc part of the json"""
     return json['track']['lrc']
 
 def split_pars(string):
+    """splits paragraphs by double line break"""
     return string.split('\r\n\r\n')
 
 def split_words(string):
+    """splits words by blank space"""
     return string.split()
 
-def autocorr(arr):
-    n = len(arr)
-    Rxy = [0.0] * n
-    for i in xrange(n):
-        for j in xrange(i, min(i+n,n)):
-            Rxy[i] += int(arr[j]==arr[j-i])
-        for j in xrange(i):
-            Rxy[i] += int(arr[j]==arr[j-i+n])
-        Rxy[i] /= float(n)
-    return Rxy
+# attempted to imitate method described here: http://bpchesney.org/?p=715
+# since abandoned
+# def autocorr(arr):
+#     n = len(arr)
+#     Rxy = [0.0] * n
+#     for i in xrange(n):
+#         for j in xrange(i, min(i+n,n)):
+#             Rxy[i] += int(arr[j]==arr[j-i])
+#         for j in xrange(i):
+#             Rxy[i] += int(arr[j]==arr[j-i+n])
+#         Rxy[i] /= float(n)
+#     return Rxy
 
-def most_similar(arr):
-    m = max(arr[1:])
-    return (m,[i for i, j in enumerate(arr[1:]) if j == m])
+# def most_similar(arr):
+#     m = max(arr[1:])
+#     return (m,[i for i, j in enumerate(arr[1:]) if j == m])
 
 def find_repeats(arr):
+    """Finds exactly repeated paragraphs"""
     repeated = []
     for i in a:
         if a.count(i) > 1 and i not in repeated: repeated.append(i)
     return repeated
 
+def get_words(s):
+    """ Returns a dictionary of word counts, given a string"""
+    d = {}
+    s = s.lower()
+    for word in s.split():
+        d[word] = d.get(word,0) + 1
+    return d
+
+def compute_similarity(d1,d2):
+    """ Computes cosine similarity of the two dictionaries of words. This method was adapted from:
+    http://stackoverflow.com/questions/15173225/how-to-calculate-cosine-similarity-given-2-sentence-strings-python"""
+    intersection = set(d1.keys()) & set(d2.keys())
+    numerator = sum([d1[w] * d2[w] for w in intersection])
+    sum1 = sum([d1[w] ** 2 for w in d1.keys()])
+    sum2 = sum([d2[w] ** 2 for w in d2.keys()])
+    denominator = math.sqrt(sum1) * math.sqrt(sum2)
+
+    if not denominator:
+        return 0.0
+    else:
+        return float(numerator) / denominator
+
+def find_chorus_freq(split_pars):
+    par_freqs = []
+    chorus = []
+    for par in split_pars:
+        par_freqs.append(get_words(par))
+
+    for i in xrange(len(split_pars)):
+        for j in xrange(1,i):
+            if compute_similarity(par_freqs[i],par_freqs[j]) > 0.96 and split_pars[i] not in chorus:
+                chorus.append(split_pars[i])
+
+    return chorus
+
 
 if __name__ == '__main__':
-    a = split_pars(harvest_lyrics(get_json(make_lrc_url('Red Hot Chili Peppers','Otherside'))))
+    a = split_pars(harvest_lyrics(get_json(make_lrc_url('Taylor Swift','Blank Space'))))
 
-    print find_repeats(a)
+    print find_chorus_freq(a)
     # print most_similar(autocorr(parse_lyrics(harvest_lyrics(get_json(make_lrc_url('Michael Jackson','Beat it'))))))
     # print harvest_lyrics(get_json(make_lrc_url('Half Moon Run','Full Circle')))
