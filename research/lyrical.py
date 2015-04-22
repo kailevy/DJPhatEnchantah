@@ -98,21 +98,31 @@ def compute_similarity(d1,d2):
 
 def find_chorus_freq(split_pars):
     par_freqs = []
+    chorus_freqs = []
     chorus = []
     for par in split_pars:
         par_freqs.append(get_words(par))
 
-    for i in xrange(len(split_pars)):
-        for j in xrange(1,i):
-            if compute_similarity(par_freqs[i],par_freqs[j]) > 0.96 and split_pars[i] not in chorus:
+    for i in range(len(split_pars)):
+        for j in range(i+1,len(split_pars)):
+            if compute_similarity(par_freqs[j],par_freqs[i]) > 0.9 and split_pars[i] not in chorus:
                 chorus.append(split_pars[i])
+
+    for par in chorus:
+        chorus_freqs.append(get_words(par))
+
+    for i in range(len(chorus)):
+        for j in range(i+1,len(chorus)):
+            if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.85:
+                chorus.pop(i)
 
     return chorus
 
 
 if __name__ == '__main__':
-    a = split_pars(harvest_lyrics(get_json(make_lrc_url('Taylor Swift','Blank Space'))))
+    a = split_pars(harvest_lyrics(get_json(make_lrc_url('cut copy','We are explorers'))))
 
     print find_chorus_freq(a)
+    # print find_repeats(a)
     # print most_similar(autocorr(parse_lyrics(harvest_lyrics(get_json(make_lrc_url('Michael Jackson','Beat it'))))))
-    # print harvest_lyrics(get_json(make_lrc_url('Half Moon Run','Full Circle')))
+    # print harvest_lyrics(get_json(make_lrc_url('The Killers','Mr. Brightside')))
