@@ -75,7 +75,6 @@ def get_timestamp(timed_chorus, worded_chorus):
     first_line = worded_chorus[0]
     last_line = worded_chorus[-1]
     # print len(worded_chorus)
-
     # print '\n'
     #for i in timed_chorus: print i['line']
     candidates = []
@@ -171,7 +170,7 @@ def find_chorus_freq(split_pars):
 
     for i in range(len(split_pars)):
         for j in range(i+1,len(split_pars)):
-            if compute_similarity(par_freqs[j],par_freqs[i]) > 0.9 and split_pars[i] not in chorus:
+            if compute_similarity(par_freqs[j],par_freqs[i]) > 0.7 and split_pars[i] not in chorus:
                 chorus.append(split_pars[i])
 
     for par in chorus:
@@ -182,16 +181,12 @@ def find_chorus_freq(split_pars):
     if len(chorus) > 1:
         for i in range(len(chorus)):
             for j in range(i+1,len(chorus)):
-                if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.85:
+                if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.8:
                     chorus.pop(j - (original_length-len(chorus)))
 
     return chorus
 
-def usage():
-    print 'This is usage'
-
 if __name__ == '__main__':
-   
     parser = argparse.ArgumentParser()
     parser.add_argument('artist', help='Enter the artist(s) of your song')
     parser.add_argument('songName', help='Enter the name of your song')
@@ -230,4 +225,4 @@ if __name__ == '__main__':
 
 
     # Outputs the chorus and a little more
-    render(bars[index_start:index_end+1], 'chorus.mp3', True)
+    render(bars[index_start-1:index_end+2], 'chorus.mp3', True)
