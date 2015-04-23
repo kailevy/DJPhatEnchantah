@@ -1,7 +1,5 @@
 """
 Trying out lyrics stuff
-http://test.lyricfind.com/api_service/lyric.do?apikey=87c94e1a862dcd6ccb9fe4f4c567
-5007&lrckey=338e17628d2c45501a8ef6168a3dc115&territory=US&reqtype=default&trackid=amg:2033&format=lrc
 """
 
 import sys
@@ -29,7 +27,6 @@ LYRICFIND_DISPLAY_URL = 'http://test.lyricfind.com/api_service/lyric.do'
 
 def get_json(url):
     """
-
     Given a properly formatted URL for a JSON web API request, return
     a Python JSON object containing the response to that request.
     """
@@ -49,19 +46,23 @@ def make_lrc_url(artist,title):
     return url
 
 def harvest_lyrics(json):
+    """Gets lyrics from json"""
     return json['track']['lyrics']
 
 def harvest_lrc(json):
+    """Gets lrc from json"""
     return json['track']['lrc']
 
 def split_pars(string):
+    """Splits lyrics by double linebreak"""
     return string.split('\r\n\r\n')
 
 def split_words(string):
+    """Splits words by blanks spaces"""
     return string.split()
 
-
 def find_repeats(arr):
+    """finds exact repeated paragraphs"""
     repeated = []
     for i in arr:
         if arr.count(i) > 1 and i not in repeated: repeated.append(i)
@@ -157,6 +158,7 @@ def compute_similarity(d1,d2):
         return float(numerator) / denominator
 
 def find_chorus_freq(split_pars):
+    """finds chorus based off of similar word frequencies"""
     par_freqs = []
     chorus_freqs = []
     chorus = []
@@ -209,9 +211,7 @@ if __name__ == '__main__':
     # Outputs the chorus and a little more
     render(bars[index_start:index_end+8], 'chorus.mp3', True)
 
+    print index_start[1], index_end[1]
 
-
-
-
-
+    render(bars[index_start[1]:index_end[1]+5], 'chorus.mp3', True)
 
