@@ -2,7 +2,7 @@
 Trying out lyrics stuff
 """
 
-import sys
+import sys, getopt, argparse
 import urllib2
 import os
 import json
@@ -75,27 +75,28 @@ def get_timestamp(timed_chorus, worded_chorus):
     first_line = worded_chorus[0]
     last_line = worded_chorus[-1]
     # print len(worded_chorus)
-    print worded_chorus
-    i = -1
 
     # print '\n'
-    # for i in timed_chorus: print i['line']
+    #for i in timed_chorus: print i['line']
     candidates = []
 
     # Saves all the possible start points of the chorus and their indices:
-    for line in timed_chorus:
-        i += 1
-        if line['line'].strip() == first_line.strip():
+    for i, line in enumerate(timed_chorus):
+        if line['line'].strip() == first_line.strip() or \
+            first_line.strip() in line['line'].strip() or \
+            line['line'].strip() in first_line.strip():
             candidates.append([i, line])
 
-        if line['line'].strip() == last_line.strip():
+        if line['line'].strip() == last_line.strip() or \
+            last_line.strip() in line['line'].strip() or \
+            line['line'].strip() in last_line.strip():
             final_line, final_index = line, i
 
     # For each start, compute number of lines it takes to get to the last line
     # of the chorus. Take the start that is the minimum distance
     for j in candidates:
         distance = final_index - j[0]
-        if distance > 0:
+        if distance > 3:
             j += [final_index - j[0]]
         else:
             j += [1000]
@@ -120,6 +121,8 @@ def find_times(bars, start_time, end_time, fade):
     loop has passed over the right bar, and we save the previous bar's index"""
 
     startScore, endScore = 10000000, 10000000
+    first_bar = 0
+    last_bar = len(bars)-1
     found_first = False
 
     for i, bar in enumerate(bars):
@@ -174,18 +177,34 @@ def find_chorus_freq(split_pars):
     for par in chorus:
         chorus_freqs.append(get_words(par))
 
-    for i in range(len(chorus)):
-        for j in range(i+1,len(chorus)):
-            if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.85:
-                chorus.pop(j)
+    original_length = len(chorus)
+
+    if len(chorus) > 1:
+        for i in range(len(chorus)):
+            for j in range(i+1,len(chorus)):
+                if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.85:
+                    chorus.pop(j - (original_length-len(chorus)))
 
     return chorus
 
+def usage():
+    print 'This is usage'
+
 if __name__ == '__main__':
-    artist = 'Taylor Swift'
-    song = 'Red'
-    print make_lrc_url(artist,song)
-    timestamped_chorus = harvest_lrc(get_json(make_lrc_url(artist, song)))
+   
+    parser = argparse.ArgumentParser()
+    parser.add_argument('artist', help='Enter the artist(s) of your song')
+    parser.add_argument('songName', help='Enter the name of your song')
+    parser.add_argument('fileName', help='Enter the file name of your song')
+    args = parser.parse_args()
+    
+    artist = args.artist
+    song = args.songName
+    try:
+        timestamped_chorus = harvest_lrc(get_json(make_lrc_url(artist, song)))
+    except KeyError:
+        print '\nYour song could not be processed.\n'
+        sys.exit()
 
     # Remove blank spaces between paragraphs from the timestamped chorus
     timestamped_chorus = [i for i in timestamped_chorus if i['line']]
@@ -202,12 +221,13 @@ if __name__ == '__main__':
     start, end = get_timestamp(timestamped_chorus, chorus_split)
 
     # Locate the track and get necessary attributes
-    track = audio.LocalAudioFile(song+'.mp3')
+    track = audio.LocalAudioFile(args.fileName)
     fade = getattr(track.analysis, 'end_of_fade_in')
     bars = getattr(track.analysis, 'bars')
 
     # Get starting and ending indices of the bars for the chorus
     index_start, index_end = find_times(bars, start, end, fade)
 
+
     # Outputs the chorus and a little more
-    render(bars[index_start:index_end+8], 'chorus.mp3', True)
+    render(bars[index_start:index_end+1], 'chorus.mp3', True)
