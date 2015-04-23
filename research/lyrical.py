@@ -75,7 +75,11 @@ def get_timestamp(timed_chorus, worded_chorus):
     first_line = worded_chorus[0]
     last_line = worded_chorus[-1]
     # print len(worded_chorus)
+    print worded_chorus
     i = -1
+
+    # print '\n'
+    # for i in timed_chorus: print i['line']
     candidates = []
 
     # Saves all the possible start points of the chorus and their indices:
@@ -84,30 +88,27 @@ def get_timestamp(timed_chorus, worded_chorus):
         if line['line'].strip() == first_line.strip():
             candidates.append([i, line])
 
-    # For each candidate, check if index+len(chorus) or index+len(chorus)-1 is
-    # the right end line of the chorus. If it is, add it to the candidate.
-    for j in candidates:
-        try:
-            test_line = timed_chorus[j[0]+len(worded_chorus)]
-            other_test_line = timed_chorus[j[0]+len(worded_chorus)-1]
-        except IndexError:
-            pass
+        if line['line'].strip() == last_line.strip():
+            final_line, final_index = line, i
 
-        # print test_line, other_test_line
-        if test_line['line'].strip() == last_line.strip():
-            j += [test_line]
-        elif other_test_line['line'].strip() == last_line.strip():
-            j += [other_test_line]
+    # For each start, compute number of lines it takes to get to the last line
+    # of the chorus. Take the start that is the minimum distance
+    for j in candidates:
+        distance = final_index - j[0]
+        if distance > 0:
+            j += [final_index - j[0]]
+        else:
+            j += [1000]
 
     # for i in candidates: print i, '\n'
 
-    # The right candidate will have 3 elements: index, start line and end line.
-    # It doesn't matter if there are more than 1 candidates, it will just pick
-    # one and assign the start time and end time accordingly.
-    for cand in candidates:
-        if len(cand) == 3 and cand[2]['milliseconds'] > cand[1]['milliseconds']:
-            start_time = cand[1]['milliseconds']
-            end_time = cand[2]['milliseconds']
+    # Right start of chorus is the one with minimum distance to 
+    right_one = min(candidates, key=lambda x: x[2])
+
+    start_time = right_one[1]['milliseconds']
+    end_time = final_line['milliseconds']
+
+    print start_time, end_time
 
     # returns times in seconds
     return float(start_time)/1000.0, float(end_time)/1000.0
@@ -181,8 +182,8 @@ def find_chorus_freq(split_pars):
     return chorus
 
 if __name__ == '__main__':
-    artist = 'Ed Sheeran'
-    song = 'Thinking Out Loud'
+    artist = 'Taylor Swift'
+    song = 'Red'
     print make_lrc_url(artist,song)
     timestamped_chorus = harvest_lrc(get_json(make_lrc_url(artist, song)))
 
