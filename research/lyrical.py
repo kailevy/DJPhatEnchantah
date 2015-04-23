@@ -210,8 +210,3 @@ if __name__ == '__main__':
 
     # Outputs the chorus and a little more
     render(bars[index_start:index_end+8], 'chorus.mp3', True)
-
-    print index_start[1], index_end[1]
-
-    render(bars[index_start[1]:index_end[1]+5], 'chorus.mp3', True)
-
