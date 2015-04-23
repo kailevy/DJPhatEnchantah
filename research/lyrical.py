@@ -60,20 +60,6 @@ def split_pars(string):
 def split_words(string):
     return string.split()
 
-def autocorr(arr):
-    n = len(arr)
-    Rxy = [0.0] * n
-    for i in xrange(n):
-        for j in xrange(i, min(i+n,n)):
-            Rxy[i] += int(arr[j]==arr[j-i])
-        for j in xrange(i):
-            Rxy[i] += int(arr[j]==arr[j-i+n])
-        Rxy[i] /= float(n)
-    return Rxy
-
-def most_similar(arr):
-    m = max(arr[1:])
-    return (m,[i for i, j in enumerate(arr[1:]) if j == m])
 
 def find_repeats(arr):
     repeated = []
@@ -83,40 +69,70 @@ def find_repeats(arr):
 
 
 def get_timestamp(timed_chorus, worded_chorus):
+    """Retieves the time stamp of the first chorus in the song. Could modify
+    this to be the second (since that is usually the more colorful one."""
     first_line = worded_chorus[0]
     last_line = worded_chorus[-1]
-    print 'first:' + first_line
-    print 'last:' + last_line
-    i=0
-    for line in timed_chorus:
-        if line['line'] == first_line:
-            print line
-            start_time = line['milliseconds']
-            break
+    # print len(worded_chorus)
+    i = -1
+    candidates = []
+
+    # Saves all the possible start points of the chorus and their indices:
     for line in timed_chorus:
         i += 1
-        if line['line'] == last_line:
-            end_time = line['milliseconds']
-            if end_time > start_time: break
+        if line['line'].strip() == first_line.strip():
+            candidates.append([i, line])
 
-    assert end_time > start_time
+    # For each candidate, check if index+len(chorus) or index+len(chorus)-1 is
+    # the right end line of the chorus. If it is, add it to the candidate.
+    for j in candidates:
+        try:
+            test_line = timed_chorus[j[0]+len(worded_chorus)]
+            other_test_line = timed_chorus[j[0]+len(worded_chorus)-1]
+        except IndexError:
+            pass
 
-    start_time = float(start_time)/1000.0
+        # print test_line, other_test_line
+        if test_line['line'].strip() == last_line.strip():
+            j += [test_line]
+        elif other_test_line['line'].strip() == last_line.strip():
+            j += [other_test_line]
 
-    end_time = float(end_time)/1000.0
+    # for i in candidates: print i, '\n'
 
-    return start_time, end_time
+    # The right candidate will have 3 elements: index, start line and end line.
+    # It doesn't matter if there are more than 1 candidates, it will just pick
+    # one and assign the start time and end time accordingly.
+    for cand in candidates:
+        if len(cand) == 3 and cand[2]['milliseconds'] > cand[1]['milliseconds']:
+            start_time = cand[1]['milliseconds']
+            end_time = cand[2]['milliseconds']
+
+    # returns times in seconds
+    return float(start_time)/1000.0, float(end_time)/1000.0
 
 def find_times(bars, start_time, end_time, fade):
-    start_candidates = []
-    end_candidates = []
-    for i, bar in enumerate(bars):
-        score = abs(bar.start - fade - start_time)
-        start_candidates.append((score, i))
-        score = abs(bar.start - fade - end_time)
-        end_candidates.append((score,i))
+    """Finds and returns the indices of the bars that start and end of the 
+    chorus. This function works by, keeping track of the scores of the current
+    and previous bars. If the current score becomes higher, it means that the
+    loop has passed over the right bar, and we save the previous bar's index"""
 
-    return min(start_candidates), min(end_candidates)
+    startScore, endScore = 10000000, 10000000
+    found_first = False
+
+    for i, bar in enumerate(bars):
+        if not found_first:
+            prevStartScore, startScore = startScore, abs(bar.start - fade - start_time)
+            if startScore > prevStartScore: 
+                first_bar = i-1
+                found_first = True
+
+        prevEndScore, endScore = endScore, abs(bar.start - fade - end_time)
+        if endScore > prevEndScore: 
+            last_bar = i-1
+            break
+
+    return first_bar, last_bar
 
 def get_words(s):
     """ Returns a dictionary of word counts, given a string"""
@@ -158,38 +174,40 @@ def find_chorus_freq(split_pars):
     for i in range(len(chorus)):
         for j in range(i+1,len(chorus)):
             if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.85:
-                chorus.pop(i)
+                chorus.pop(j)
 
     return chorus
 
 if __name__ == '__main__':
-    artist = 'Taylor Swift'
-    song = 'Blank Space'
+    artist = 'Ed Sheeran'
+    song = 'Thinking Out Loud'
+    print make_lrc_url(artist,song)
     timestamped_chorus = harvest_lrc(get_json(make_lrc_url(artist, song)))
+
+    # Remove blank spaces between paragraphs from the timestamped chorus
+    timestamped_chorus = [i for i in timestamped_chorus if i['line']]
+
+    # Retrieve the lyrics as a list of separate paragraphs
     b = split_pars(harvest_lyrics(get_json(make_lrc_url(artist, song))))
 
+    # Retrieve the chorus as a list of lines and process it
     a = find_chorus_freq(b)
-
     chorus = '\n'.join(a)
-
-    print chorus
-
     chorus_split = chorus.split('\r\n')
 
+    # Get the start and end times of the song based on the chorus given
     start, end = get_timestamp(timestamped_chorus, chorus_split)
 
-    print start, end
-
+    # Locate the track and get necessary attributes
     track = audio.LocalAudioFile(song+'.mp3')
-    a = pyechonest.track.track_from_filename(song+'.mp3')
     fade = getattr(track.analysis, 'end_of_fade_in')
     bars = getattr(track.analysis, 'bars')
 
+    # Get starting and ending indices of the bars for the chorus
     index_start, index_end = find_times(bars, start, end, fade)
 
-    print index_start[1], index_end[1]
-
-    render(bars[index_start[1]:index_end[1]+5], 'chorus.mp3', True)
+    # Outputs the chorus and a little more
+    render(bars[index_start:index_end+8], 'chorus.mp3', True)
 
 
 
