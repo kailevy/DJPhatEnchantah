@@ -15,6 +15,8 @@ from pyechonest import config
 from binheap import BinHeap
 from copy import deepcopy
 import pyechonest
+import numpy as np
+import matplotlib.pyplot as plt
 
 config.ECHO_NEST_API_KEY = "SKUP2XKX0MRWEOBIE"
 
@@ -186,6 +188,26 @@ def find_chorus_freq(split_pars):
 
     return chorus
 
+def get_word_map(chorus):
+    print chorus[0]
+    voiced = {}
+    section = []
+    i = 0
+
+    while i < len(chorus):
+        if chorus[i]['line']:
+            section.append(chorus[i]['milliseconds'])
+        else:
+            for j in range(int(section[0]), int(section[-1])+1):
+                if round(j/1000.0, 1) not in voiced:
+                    voiced[round(j/1000.0, 1)] = round(j/1000.0, 1)
+            section = []        
+        i += 1
+    
+    for i in voiced:
+        plt.plot([i], [1], 'ro')
+    plt.show()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('artist', help='Enter the artist(s) of your song')
@@ -201,8 +223,10 @@ if __name__ == '__main__':
         print '\nYour song could not be processed.\n'
         sys.exit()
 
+    get_word_map(timestamped_chorus)
+
     # Remove blank spaces between paragraphs from the timestamped chorus
-    timestamped_chorus = [i for i in timestamped_chorus if i['line']]
+    """timestamped_chorus = [i for i in timestamped_chorus if i['line']]
 
     # Retrieve the lyrics as a list of separate paragraphs
     b = split_pars(harvest_lyrics(get_json(make_lrc_url(artist, song))))
@@ -225,4 +249,4 @@ if __name__ == '__main__':
 
 
     # Outputs the chorus and a little more
-    render(bars[index_start-1:index_end+2], 'chorus.mp3', True)
+    render(bars[index_start-1:index_end+2], 'chorus.mp3', True)"""
