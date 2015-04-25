@@ -59,6 +59,9 @@ def split_pars(string):
     """Splits lyrics by double linebreak"""
     return string.split('\r\n\r\n')
 
+def get_lines(paragraph):
+    return paragraph.split('\r\n')
+
 def split_words(string):
     """Splits words by blanks spaces"""
     return string.split()
@@ -165,48 +168,85 @@ def compute_similarity(d1,d2):
 def find_chorus_freq(split_pars):
     """finds chorus based off of similar word frequencies"""
     par_freqs = []
-    chorus_freqs = []
     chorus = []
     for par in split_pars:
         par_freqs.append(get_words(par))
 
     for i in range(len(split_pars)):
         for j in range(i+1,len(split_pars)):
-            if compute_similarity(par_freqs[j],par_freqs[i]) > 0.7 and split_pars[i] not in chorus:
+            if compute_similarity(par_freqs[j],par_freqs[i]) > 0.7 and split_pars[i]:
                 chorus.append(split_pars[i])
+
+    return chorus
+
+def filter_chorus(chorus):
+    filter_chorus = [i for i in chorus]
+    chorus_freqs = []
 
     for par in chorus:
         chorus_freqs.append(get_words(par))
-
-    original_length = len(chorus)
 
     if len(chorus) > 1:
         for i in range(len(chorus)):
             for j in range(i+1,len(chorus)):
                 if compute_similarity(chorus_freqs[j],chorus_freqs[i]) > 0.8:
-                    chorus.pop(j - (original_length-len(chorus)))
+                    filter_chorus[j] = ''
 
-    return chorus
+    return [i for i in filter_chorus if i]
 
-def get_word_map(chorus):
-    print chorus[0]
-    voiced = {}
+def get_word_map(lyrics, choruses):
+    voiced = []
+    voiced_chorus = []
     section = []
+    chorus_lines = []
+    for i in choruses:
+        chorus_lines += get_lines(i)
+    chor = []
     i = 0
+    verses_choruses = [] # (start, end)
 
-    while i < len(chorus):
-        if chorus[i]['line']:
-            section.append(chorus[i]['milliseconds'])
+    while i < len(lyrics):
+        if lyrics[i]['line']:
+            if lyrics[i]['line'].strip() in chorus_lines:
+                chor.append(lyrics[i]['milliseconds'])
+            else:
+                section.append(lyrics[i]['milliseconds'])
         else:
-            for j in range(int(section[0]), int(section[-1])+1):
-                if round(j/1000.0, 1) not in voiced:
-                    voiced[round(j/1000.0, 1)] = round(j/1000.0, 1)
-            section = []        
+            if int(lyrics[i+1]['milliseconds']) - int(lyrics[i-1]['milliseconds']) < 7:
+                pass
+            else:
+                if section:
+                    verses_choruses.append((int(section[0]), int(section[-1]), 'verse'))
+                    # for j in range(int(section[0]), int(section[-1])+1):
+                    #     if round(j/1000.0, 1) not in voiced:
+                    #         voiced.append(round(j/1000.0, 1))
+                    section = []
+                if chor:
+                    verses_choruses.append((int(chor[0]), int(chor[-1]), 'chorus'))
+                    # for k in range(int(chor[0]), int(chor[-1])+1):
+                    #     if round(k/1000.0, 1) not in voiced_chorus:
+                    #         voiced_chorus.append(round(k/1000.0, 1))
+                    chor = []
         i += 1
+
+    # plots verses and choruses
     
-    for i in voiced:
-        plt.plot([i], [1], 'ro')
-    plt.show()
+    """for time in voiced:
+        plt.plot([time], [1], 'ro')
+    for time in voiced_chorus:
+        plt.plot([time], [2], 'ro')
+
+    for verse in verses_choruses:
+        if verse[2] == 'verse':
+            plt.plot([verse[0]/1000.0], [3], 'bo')
+            plt.plot([verse[1]/1000.0], [3], 'bo')
+        if verse[2] == 'chorus':
+            plt.plot([verse[0]/1000.0], [4], 'bo')
+            plt.plot([verse[1]/1000.0], [4], 'bo')
+
+    plt.show()"""    
+    return verses_choruses    
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -223,17 +263,19 @@ if __name__ == '__main__':
         print '\nYour song could not be processed.\n'
         sys.exit()
 
-    get_word_map(timestamped_chorus)
-
     # Remove blank spaces between paragraphs from the timestamped chorus
-    """timestamped_chorus = [i for i in timestamped_chorus if i['line']]
+    #timestamped_chorus = [i for i in timestamped_chorus if i['line']]
 
     # Retrieve the lyrics as a list of separate paragraphs
     b = split_pars(harvest_lyrics(get_json(make_lrc_url(artist, song))))
 
     # Retrieve the chorus as a list of lines and process it
     a = find_chorus_freq(b)
-    chorus = '\n'.join(a)
+    c = filter_chorus(a)
+
+    get_word_map(timestamped_chorus, a)
+
+    """chorus = '\n'.join(a)
     chorus_split = chorus.split('\r\n')
 
     # Get the start and end times of the song based on the chorus given
