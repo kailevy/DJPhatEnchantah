@@ -273,7 +273,7 @@ if __name__ == '__main__':
     a = find_chorus_freq(b)
     c = filter_chorus(a)
 
-    get_word_map(timestamped_chorus, a)
+    print get_word_map(timestamped_chorus, a)
 
     """chorus = '\n'.join(a)
     chorus_split = chorus.split('\r\n')
@@ -282,7 +282,7 @@ if __name__ == '__main__':
     start, end = get_timestamp(timestamped_chorus, chorus_split)
 
     # Locate the track and get necessary attributes
-    track = audio.LocalAudioFile(args.fileName)
+    track = audio.LocalAudioFile(args.fileName)''
     fade = getattr(track.analysis, 'end_of_fade_in')
     bars = getattr(track.analysis, 'bars')
 
