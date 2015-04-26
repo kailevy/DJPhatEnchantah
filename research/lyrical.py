@@ -171,7 +171,7 @@ def find_chorus_freq(split_pars):
     chorus = []
     for par in split_pars:
         par_freqs.append(get_words(par))
-
+    print split_pars
     for i in range(len(split_pars)):
         for j in range(i+1,len(split_pars)):
             if compute_similarity(par_freqs[j],par_freqs[i]) > 0.7 and split_pars[i]:
@@ -272,8 +272,9 @@ if __name__ == '__main__':
     # Retrieve the chorus as a list of lines and process it
     a = find_chorus_freq(b)
     c = filter_chorus(a)
+    print a 
 
-    get_word_map(timestamped_chorus, a)
+    print get_word_map(timestamped_chorus, a)
 
     """chorus = '\n'.join(a)
     chorus_split = chorus.split('\r\n')
