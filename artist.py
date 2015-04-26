@@ -22,7 +22,9 @@ second_run = sorted(first_run.items(), key=operator.itemgetter(1))
 final_list = []
 for tup in second_run:
 	final_list.append(tup[0])
-	
+print final_list
+for element in final_list:
+	print element.audio_summary['tempo']
 #p = playlist.static(type='artist-radio', artist=['ida maria', 'florence + the machine'])
 # my_playlist = 
 # s = song.search(title ='everything at once', results = 1)
