@@ -15,8 +15,7 @@ LYRICFIND_DISPLAY_URL = 'http://test.lyricfind.com/api_service/lyric.do?'
 def get_words(aString):
     """ Returns a dictionary of word counts, given a string"""
     freq = {}
-    aString = aString.lower()
-    for word in aString.split():
+    for word in aString.lower().split():
         freq[word] = freq.get(word,0) + 1
     return freq
 
@@ -59,9 +58,10 @@ class Tune():
             json_response = self.get_json()
             self.lyrics = json_response['track']['lyrics'] # Get lyrics alone
             self.lrc = json_response['track']['lrc'] # Get lyrics with timestamps
-        except KeyError: 
-            print 'Song could not be processed.'
-            sys.exit()
+        except KeyError:
+            raise RuntimeError 
+            # print 'Song could not be processed.'
+            # sys.exit()
 
     def get_json(self):
         """Makes API request to retrieve song's lyrics"""

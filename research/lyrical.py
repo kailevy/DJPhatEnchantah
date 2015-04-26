@@ -283,7 +283,7 @@ if __name__ == '__main__':
     start, end = get_timestamp(timestamped_chorus, chorus_split)
 
     # Locate the track and get necessary attributes
-    track = audio.LocalAudioFile(args.fileName)
+    track = audio.LocalAudioFile(args.fileName)''
     fade = getattr(track.analysis, 'end_of_fade_in')
     bars = getattr(track.analysis, 'bars')
 
