@@ -1,83 +1,83 @@
 import echonest.remix.audio as audio
 from echonest.remix.action import render, Crossfade
-from copy import deepcopy
 from pyechonest import config
-import math
-import random
 from binheap import BinHeap
+from copy import deepcopy
 
 config.ECHO_NEST_API_KEY = "SKUP2XKX0MRWEOBIE"
 
-def choose_beat(first_song, second_song, possible_places):
-    """Takes a list of tuples of indices in the form (index of end of song1, 
-    index of start of song2). Then compare each end of song1 and start of 
-    song2 to how far away they are from end of a section and start of a section
-    respectively for each song. Returns the closest match"""
-    beats1 = getattr(first_song.analysis, 'beats')
-    beats2 = getattr(second_song.analysis, 'beats')
+def compare_segments(a, b):
+    """Look at two segments a, b. Compare pitches, timbre, duration and
+    loudness_max. Return a score"""
+    pitch_score, timbre_score, duration_score, loudness_score = 0, 0, 0, 0
 
-    sections1 = getattr(first_song.analysis, 'sections')
-    sections2 = getattr(second_song.analysis, 'sections')
+    #calculates score for timbre and pitches first
+    for i in range(12): #12 values of segment.timbre and segment.pitches
+        #timbre_score += abs(a.timbre[i] - b.timbre[i])
+        pitch_score = abs(a.pitches[i] - b.pitches[i])/(12**0.5)
 
-    ret = []
+    #duration_score = abs(a.duration - b.duration)
+    #loudness_score = abs(a.loudness_max - b.loudness_max)
 
-    for pair in possible_places:
-        end = beats1[pair[1]].end
-        start = beats2[pair[2]].start
-        score1 = 1000
-        score2 = 1000
-        a = min([abs(section.end-end) for section in sections1])
-        b = min([abs(section.start-start) for section in sections2])
-        
-        pair += (a+b,)
-        ret.append(pair)
+    return pitch_score# + timbre_score + loudness_score + duration_score
 
-    return min(ret, key=lambda x: x[3])
 
-def match_by_beats(song1, song2):
-    first_song = audio.LocalAudioFile(song1)
-    second_song = audio.LocalAudioFile(song2)
+def comb_segment(segments, start=0, other_start=1, prev_match=False, chain=0):
+    """Recursively goes through and compares the first beat to all the other
+    segments in the song. Returns the longest chain of similar segments."""
+    THRESHOLD = 0.2
+    #if segments match
+    if start > len(segments) or other_start > len(segments):
+        return 0, 0, []
+    else:
+        score = compare_segments(segments[start], segments[other_start])
+        #print score
+        if score <= THRESHOLD:
+            start += 1
+            other_start += 1
+            chain += 1
+            if other_start >= len(segments)-1:
+                return chain+1, start, segments[start+1:]
+            else:
+                return comb_segment(segments, start, other_start, True, chain)
+        #if segments don't match but a chain has been going 
+        elif score > THRESHOLD and prev_match == True:
+            return chain, start, segments[start+1:] #returns how long the chain is, end of the chain, and remaining segments
+        #if segments don't match and no chain:
+        else:
+            #if have not finished comparing start note to all other notes
+            if other_start < len(segments)-1:
+                return comb_segment(segments, start, other_start+1)
+            elif other_start == len(segments)-1:
+                return 0, start+1, segments[start+1:]
 
-    beats1 = getattr(first_song.analysis, 'beats')
-    beats2 = getattr(second_song.analysis, 'beats')
 
-    places = BinHeap()
-    possible_places = []
-
+def find_chorus(path_to_song):
+    track = audio.LocalAudioFile(path_to_song)
+    track_segments = getattr(track.analysis, 'segments')
+    tmp_segments = deepcopy(track_segments)
+    chains = []
+    ends_of_chains = []
     start = 0
-    while start < len(beats1):
-        for i in range(len(beats2)):
-            score = (abs(beats1[start].duration**2 - beats2[i].duration**2))**0.5
-            places.insert((score, start, i))
-        start += 1
+    other_start = 1
 
-    for i in range(10):
-        possible_places.append(places.delMin())
+    while tmp_segments:
+        chain, start, tmp_segments = comb_segment(tmp_segments, start, other_start)
+        other_start = start + 1
+        chains.append(chain)
+        ends_of_chains.append(start)
 
-    choice = choose_beat(first_song, second_song, possible_places)
-    new_end = choice[1]
-    new_start = choice[2]
+    #print chains
 
-    FADE_TIME = 3
-
-    """out = Crossfade((first_song, second_song), (new_end, new_start), FADE_TIME)
-            
-                a = out.render()
-                render(getattr(a.analysis, 'beats'), 'crossfadetest.mp3', True)"""
-
-    new_end = choice[1]
-    new_start = choice[2]
-
-    added = 0.001
-
-    for i in range(10):
-        beats1[new_end-(10-i)].duration += i*added
-        beats2[new_start+i].duration += i*added
-
-    new_song = beats1[:new_end+1] + beats2[new_start:]
-
-    render(new_song, 'beatmatching1.mp3', True)
+    max_chain = max(chains)
+    index = chains.index(max_chain)
+    end_index = ends_of_chains[index]
+    start_index = end_index - max_chain
+    print max_chain, start_index, end_index
 
 
-match_by_beats('Blank Space.mp3', 'Burn.mp3')
+    render(track_segments[start_index:end_index+1], 'findchorus.mp3', True)
 
+
+
+find_chorus('turndownforwhat.mp3')

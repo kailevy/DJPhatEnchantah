@@ -74,4 +74,4 @@ def find_chorus_delta(path_to_song):
         print 'right'
         render(track_segments[split_index:], 'chorusof'+path_to_song, True)
 
-find_chorus_delta('payphone.mp3')
+find_chorus_delta('03 We Are Explorers.mp3')
