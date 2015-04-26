@@ -36,6 +36,7 @@ def compute_similarity(d1, d2):
 
 class Tune():
     """Class for one song in the playlist"""
+
     def __init__(self,path_to_song, name, artist):
         # Set all necessary attributes to allow for fruitful analysis
         self.tune = audio.LocalAudioFile(path_to_song)
@@ -75,6 +76,9 @@ class Tune():
         return json.loads(f.read())
 
     def get_song_map(self):
+        """Returns a list of tuples in the form (start, end, 'verse'/'chorus')
+        that linearly maps out the lyrics of the song"""
+
         # Get all the choruses in the lrc
         choruses = self.find_chorus_freq(self.lyrics.split('\r\n\r\n'))
 
@@ -95,7 +99,7 @@ class Tune():
                     chorus.append(self.lrc[i]['milliseconds'])
                 else:
                     verse.append(self.lrc[i]['milliseconds'])
-            else:
+            if not self.lrc[i]['line'] or i==len(self.lrc)-1:
                 if verse:
                     self.song_map.append([int(verse[0]), int(verse[-1]), 'verse'])
                     verse = []
@@ -104,14 +108,6 @@ class Tune():
                     chorus = []
             i += 1
 
-        # Checks if there is any verse/chorus left unsaved due to bad indexing
-        if verse:
-            self.song_map.append([int(verse[0]), int(verse[-1]), 'verse'])
-            verse = []
-        if chorus:
-            self.song_map.append([int(chorus[0]), int(chorus[-1]), 'chorus'])
-            chorus = []
-      
         return self.song_map   
 
     def find_chorus_freq(self, split_pars):
@@ -145,17 +141,13 @@ class Tune():
         while i < len(choruses)-1:
             start = choruses[i][0]
             end = choruses[i][1]
-            if i+1 < len(choruses):
-                next_start = choruses[i+1][0]
-            else:
-                next_start = 0
-            while next_start and next_start-end<=5000 and i+1<len(choruses):
+            next_start = choruses[i+1][0]
+            while next_start-end<=5000 and i+1<len(choruses):
                 i += 1
                 try: end, next_start = choruses[i][1], choruses[i+1][0]
-                except IndexError: pass
-            if next_start and next_start-end<=5000:
-                i -= 1
-                all_chorus.append([start/1000.0, choruses[i+1][1]/1000.0])
+                except IndexError: 
+                    all_chorus.append([start/1000.0, choruses[i][1]/1000.0])
+                    break
             else:
                 all_chorus.append([start/1000.0, end/1000.0])
                 if next_start and i == len(choruses)-2:
@@ -180,7 +172,7 @@ class Tune():
 
         startScore, endScore = 10000000, 10000000
         first_bar = 0
-        last_bar = len(self.bars)-1
+        last_bar = 1
         found_first = False
 
         for i, bar in enumerate(self.bars):
