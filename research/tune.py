@@ -80,12 +80,12 @@ class Tune():
         that linearly maps out the lyrics of the song"""
 
         # Get all the choruses in the lrc
-        choruses = self.find_chorus_freq(self.lyrics.split('\r\n\r\n'))
+        choruses = self.find_chorus_freq(self.lyrics.split('\n'))
 
         # Add each line to chorus_lines
         chorus_lines = []
         for i in choruses:
-            chorus_lines += i.split('\r\n')
+            chorus_lines += [j.strip() for j in i.split('\n')]
 
         verse, chorus, self.song_map = [], [], []
         i = 0
@@ -115,10 +115,13 @@ class Tune():
         par_freqs = []
         chorus = []
 
+        # print split_pars
+
         for par in split_pars:
-            if 'chorus' in par.split('\r\n')[0].lower():
-                if len(par.split('\r\n')) > 2:
-                    chorus += par.split('\r\n')[1:]
+            # print par
+            if 'chorus' in par.split('\n')[0].strip().lower():
+                if len(par.split('\n')) > 2:
+                    chorus += par.split('\n')[1:]
             par_freqs.append(get_words(par))
 
         for i in range(len(split_pars)):
@@ -127,6 +130,41 @@ class Tune():
                     chorus.append(split_pars[i])
 
         return chorus
+
+    def choose_jump_point(self):
+        """Attempts to choose the bars of the track by taking the start of one song, and 
+        setting the end to be after the 2nd + chorus as long as there is no vocals immediately
+        after
+        NOTE: WILL THROW INDEX ERROR IF THERE AREN'T AT LEAST 2 SECTIONS MARKED CHORUS"""
+        to_play = [0]
+        i = 0
+        chor_count = 0
+        # print self.song_map
+        while i < len(self.song_map) - 1:
+            # go through 2 choruses
+            while chor_count < 2:
+                if self.song_map[i][2] == 'chorus':
+                    chor_count += 1
+                    # print self.song_map[i][1]
+                i += 1
+            # look at start and end times
+            end = self.song_map[i][1]
+            end_char = self.song_map[i][2]
+            next_start = self.song_map[i+1][0]
+            # if there's a long enough silence...
+            if next_start-end >= 6000 and end_char == 'chorus':
+                to_play.append((end+next_start)/2000.0)
+                break   
+            else: i += 1
+        # if we reach the end of the verses before that, we just take the last chorus
+        # this should happen if we have no verse after the chorus to measure a silence against
+        else: 
+            for i in reversed(self.song_map):
+                if i[2] == 'chorus':
+                    to_play.append(i[1]/1000.0)
+                    break
+
+        return self.get_bars(to_play[0],to_play[1])   
 
     def find_chorus_bars(self):
         """Finds and returns the start and end bars of each chorus found in the
@@ -197,9 +235,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     bs = Tune(args.fileName, args.songName, args.artist)
-    bars = bs.find_chorus_bars()
-
-    for i in range(len(bars)):
-        render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)
-
-
+    # bars = bs.find_chorus_bars()
+    bars = bs.choose_jump_point()
+    # print bars
+    render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
+    # for i in range(len(bars)):
+        # render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)
