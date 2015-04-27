@@ -36,11 +36,14 @@ def compute_similarity(d1, d2):
 class Tune():
     """Class for one song in the playlist"""
 
-    def __init__(self,path_to_song, name, artist):
+    def __init__(self,path_to_song, name, artist, tempo=None):
         # Set all necessary attributes to allow for fruitful analysis
         self.tune = audio.LocalAudioFile(path_to_song)
-        self.track = pyechonest.track.track_from_filename(path_to_song)
-        self.bpm = getattr(self.track,'tempo')
+        if not tempo:
+            self.track = pyechonest.track.track_from_filename(path_to_song)
+            self.bpm = getattr(self.track,'tempo')
+        else:
+            self.bpm = tempo
         self.segments = getattr(self.tune.analysis, 'segments')
         self.bars = getattr(self.tune.analysis, 'bars')
         self.beats = getattr(self.tune.analysis, 'beats')
