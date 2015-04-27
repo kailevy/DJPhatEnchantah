@@ -33,7 +33,7 @@ class Playlist():
                     new_song = song.search(title=song_name, artist=artist, results=1)
                 if new_song:
                     print new_song[0].title
-                    if self.score_songs(original[0], new_song[0]) <= 0:
+                    if self.score_songs(original[0], new_song[0]) <= 20:
                         print "Adding %s to playlist" %new_song[0].title
                         playlist.append(Tune(path, new_song[0].title, new_song[0].artist_name, new_song[0].audio_summary['tempo']))
                 i += 1
