@@ -36,11 +36,11 @@ def compute_similarity(d1, d2):
 class Tune():
     """Class for one song in the playlist"""
 
-    def __init__(self,path_to_song, name, artist, tempo=None):
+    def __init__(self, path_to_song, name, artist, tempo=None):
         # Set all necessary attributes to allow for fruitful analysis
-        self.tune = audio.LocalAudioFile(path_to_song)
+        self.tune = audio.LocalAudioFile(path_to_song, verbose=False)
         if not tempo:
-            self.track = pyechonest.track.track_from_filename(path_to_song)
+            self.track = pyechonest.track.track_from_filename(path_to_song, verbose=False)
             self.bpm = getattr(self.track,'tempo')
         else:
             self.bpm = tempo
@@ -62,9 +62,9 @@ class Tune():
             self.lyrics = json_response['track']['lyrics'] # Get lyrics alone
             self.lrc = json_response['track']['lrc'] # Get lyrics with timestamps
         except KeyError:
-            raise RuntimeError 
-            # print 'Song could not be processed.'
+            # print 'Song lyrics could not be processed'
             # sys.exit()
+            raise RuntimeError
 
     def get_json(self):
         """Makes API request to retrieve song's lyrics"""
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser.add_argument('fileName', help='Enter the file name of your song')
     args = parser.parse_args()
 
-    bs = Tune(args.fileName, args.songName, args.artist)
+    bs = Tune(args.fileName, args.songName, args.artist, 86)
     bars = bs.find_chorus_bars()
 
     for i in range(len(bars)):
