@@ -204,5 +204,3 @@ if __name__ == '__main__':
 
     for i in range(len(bars)):
         render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)
-
-
