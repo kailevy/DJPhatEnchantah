@@ -53,9 +53,9 @@ class Tune():
         self.song_map = []
 
         # Set further attributes through class methods
-        self.lyrics, self.lrc = self.find_lyrics()
-        if self.lyrics and self.lrc:
-            self.get_song_map()
+        lyrics, lrc = self.find_lyrics()
+        if lyrics and lrc:
+            self.get_song_map(lyrics,lrc)
 
     def find_lyrics(self):
         """Retrieves lyrics and timestamped lyrics for the tune"""
@@ -82,12 +82,12 @@ class Tune():
         f = urllib2.urlopen(url)
         return json.loads(f.read())
 
-    def get_song_map(self):
+    def get_song_map(self, lyrics, lrc):
         """Returns a list of tuples in the form (start, end, 'verse'/'chorus')
         that linearly maps out the lyrics of the song"""
 
         # Get all the choruses in the lrc
-        choruses = self.find_chorus_freq(self.lyrics.split('\n'))
+        choruses = self.find_chorus_freq(lyrics.split('\n'))
 
         # Add each line to chorus_lines
         chorus_lines = []
@@ -97,16 +97,16 @@ class Tune():
         verse, chorus = [], []
         i = 0
 
-        # Goes through self.lrc line by line. Saves each line in the verse or
+        # Goes through lrc line by line. Saves each line in the verse or
         # chorus list, then if blank line (new paragraph) is found empties out
         # the list and save the data in the song_map as a [starttime, endtime, 'chorus'/'verse'] list
-        while i < len(self.lrc):
-            if self.lrc[i]['line']:
-                if self.lrc[i]['line'].strip() in chorus_lines:
-                    chorus.append(self.lrc[i]['milliseconds'])
+        while i < len(lrc):
+            if lrc[i]['line']:
+                if lrc[i]['line'].strip() in chorus_lines:
+                    chorus.append(lrc[i]['milliseconds'])
                 else:
-                    verse.append(self.lrc[i]['milliseconds'])
-            if not self.lrc[i]['line'] or i==len(self.lrc)-1:
+                    verse.append(lrc[i]['milliseconds'])
+            if not lrc[i]['line'] or i==len(lrc)-1:
                 if verse:
                     self.song_map.append([int(verse[0]), int(verse[-1]), 'verse'])
                     verse = []
