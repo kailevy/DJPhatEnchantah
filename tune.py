@@ -3,8 +3,6 @@ import urllib2, urllib, os, json, math, pyechonest, sys, argparse
 import echonest.remix.audio as audio
 from echonest.remix.action import render, Crossfade
 
-pyechonest.config.ECHO_NEST_API_KEY = "SKUP2XKX0MRWEOBIE"
-
 DISPLAY_KEY = os.environ.get('LYRICFIND_DISPLAY_API_KEY')
 LRC_KEY = os.environ.get('LYRICFIND_LRC_API_KEY')
 SEARCH_KEY = os.environ.get('LYRICFIND_SEARCH_API_KEY')
