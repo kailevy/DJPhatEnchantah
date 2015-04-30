@@ -36,7 +36,7 @@ def compute_similarity(d1, d2):
 class Tune():
     """Class for one song in the playlist"""
 
-    def __init__(self,path_to_song, name, artist, tempo=None):
+    def __init__(self,path_to_song, artist, name, tempo=None, song_map=None):
         # Set all necessary attributes to allow for fruitful analysis
         self.tune = audio.LocalAudioFile(path_to_song)
         if not tempo:
@@ -50,7 +50,10 @@ class Tune():
         self.fade = getattr(self.tune.analysis, 'end_of_fade_in')
         self.songName = name
         self.artist = artist
-        self.song_map = []
+        if song_map:
+            self.song_map = song_map
+        else:
+            self.song_map = []
 
         # Set further attributes through class methods
         lyrics, lrc = self.find_lyrics()
