@@ -53,19 +53,22 @@ class Tune():
         self.song_map = []
 
         # Set further attributes through class methods
-        self.find_lyrics()
-        self.get_song_map()
+        self.lyrics, self.lrc = self.find_lyrics()
+        if self.lyrics and self.lrc:
+            self.get_song_map()
 
     def find_lyrics(self):
         """Retrieves lyrics and timestamped lyrics for the tune"""
         try: 
             json_response = self.get_json()
-            self.lyrics = json_response['track']['lyrics'] # Get lyrics alone
-            self.lrc = json_response['track']['lrc'] # Get lyrics with timestamps
+            lyrics = json_response['track']['lyrics'] # Get lyrics alone
+            lrc = json_response['track']['lrc'] # Get lyrics with timestamps
         except KeyError:
-            raise RuntimeError 
+            lyrics = None
+            lrc = None
             # print 'Song could not be processed.'
             # sys.exit()
+        return (lyrics, lrc)
 
     def get_json(self):
         """Makes API request to retrieve song's lyrics"""
