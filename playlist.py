@@ -16,7 +16,7 @@ class Playlist():
         original = song.search(title=basesong_name, artist=baseartist, results=1)
 
         if original:
-            self.baseSong = Tune(path_to_song, original[0].title, original[0].artist_name, original[0].audio_summary['tempo'])
+            self.baseSong = Tune(path_to_song, original[0].artist_name, original[0].title, original[0].audio_summary['tempo'])
             playlist = [self.baseSong]
             i = 0
             while len(playlist) < numberOfSongs:
