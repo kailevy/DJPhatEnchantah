@@ -145,7 +145,7 @@ class Tune():
         """Attempts to choose the bars of the track by taking the start of one song, and 
         setting the end to be after the 2nd + chorus as long as there is no vocals immediately
         after
-        NOTE: WILL THROW INDEX ERROR IF THERE AREN'T AT LEAST 2 SECTIONS MARKED CHORUS"""
+        NOTE: WILL THROW INDEX ERROR IF THERE AREN'T AT LEAST 2 SECTIONS MARKED CHORUS """
         to_play = [0]
         i = 0
         chor_count = 0
@@ -175,6 +175,7 @@ class Tune():
                     break
 
         return self.get_bars(to_play[0],to_play[1])   
+        #
 
     def find_chorus_bars(self):
         """Finds and returns the start and end bars of each chorus found in the
