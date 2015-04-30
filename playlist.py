@@ -47,5 +47,6 @@ class Playlist():
         for i in ['danceability', 'liveness', 'energy', 'tempo']:
             score += abs(baseSong.audio_summary[i] - candidateSong.audio_summary[i])
         return score
-
-a = Playlist('song_test', '01 Radioactive.mp3', 3)
+if __name__ == '__main__':
+    # a = Playlist('song_test', '01 Radioactive.mp3', 3)
+    pass

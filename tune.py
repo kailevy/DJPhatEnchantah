@@ -50,6 +50,7 @@ class Tune():
         self.fade = getattr(self.tune.analysis, 'end_of_fade_in')
         self.songName = name
         self.artist = artist
+        self.song_map = []
 
         # Set further attributes through class methods
         self.find_lyrics()
@@ -90,7 +91,7 @@ class Tune():
         for i in choruses:
             chorus_lines += [j.strip() for j in i.split('\n')]
 
-        verse, chorus, self.song_map = [], [], []
+        verse, chorus = [], []
         i = 0
 
         # Goes through self.lrc line by line. Saves each line in the verse or
@@ -241,6 +242,6 @@ if __name__ == '__main__':
     # bars = bs.find_chorus_bars()
     bars = bs.choose_jump_point()
     # print bars
-    render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
+    # render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
     # for i in range(len(bars)):
         # render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)
