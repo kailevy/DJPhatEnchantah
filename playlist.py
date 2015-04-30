@@ -3,6 +3,7 @@ import os
 from tune import Tune
 import id3reader
 import time
+from echonest.remix.action import render
 
 class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
@@ -14,6 +15,7 @@ class Playlist():
         id3r = id3reader.Reader(path_to_song)
         basesong_name = id3r.getValue('title')
         baseartist = id3r.getValue('performer')
+        print basesong_name, baseartist, 'HELLO'
         original = song.search(title=basesong_name, artist=baseartist, results=1)
 
         if original:
@@ -26,7 +28,8 @@ class Playlist():
 
             while len(self.playlist) < numberOfSongs and k < 2:
                 try:
-                    self.max_tempo, self.min_tempo = max([tune.bpm for tune in self.playlist]), min([tune.bpm for tune in self.playlist])
+                    self.max_tempo = max([tune.bpm for tune in self.playlist])
+                    self.min_tempo = min([tune.bpm for tune in self.playlist])
                     added = [j.songName for j in self.playlist]
                     new_song = False
                     try: path = 'song_test/' + self.dirs[i]
@@ -121,7 +124,23 @@ class Playlist():
         else:
             return score, False
 
-a = Playlist('song_test', 'Little Things - One Direction.mp3', 10)
+a = Playlist('song_test', "Sugar.mp3", 4)
 a.sort_playlist()
-for i in a.playlist:
-    print i.songName, i.artist, i.bpm
+
+ordering = ['start'] + ['middle']*(len(a.playlist)-2) + ['end']
+
+real_playlist = zip(a.playlist, ordering)
+
+for i in real_playlist:
+    print i[0].songName, i[0].bpm, i[1]
+print ''
+
+
+output_song = []
+
+for i in real_playlist:
+    print 'Mixing %s' %i[0].songName
+    start, end = i[0].choose_jump_point(position=i[1])
+    output_song += i[0].bars[start:end+3]
+
+render(output_song, 'mix.mp3', True)
