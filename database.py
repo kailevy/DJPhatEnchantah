@@ -75,16 +75,7 @@ def populate_db(con, song_dir):
 def get_entry(con,filepath):
     cur = con.cursor(mdb.cursors.DictCursor)
     cur.execute("SELECT * FROM Songs WHERE Songs.File_Path LIKE " + "'" + SONG_FOLDER + '/' + filepath + "'")
-    result = cur.fetchone()
-    usable = result['Usable']
-    artist = result['Artist']
-    title = result['Title']
-    tempo = result['Tempo']
-    danceability = result['Danceability']
-    liveness = result['Liveness']
-    energy = result['Energy']
-    pickle_path = result['Pickle_Path']
-    return (usable,filepath,artist,title,tempo,danceability,liveness,energy,pickle_path)
+    return cur.fetchone()
 
 def print_db(con):
     cur = con.cursor(mdb.cursors.DictCursor)
@@ -96,7 +87,7 @@ if __name__ == '__main__':
     con = mdb.connect('localhost', 'phatuser', 'phat623', 'djdb')
     song_dir = os.listdir('./' + SONG_FOLDER)
     with con:
-        # reset_db(con)
+        reset_db(con)
         # populate_db(con,song_dir)
         print get_entry(con, '03 True Affection.mp3')
         # print_db(con)
