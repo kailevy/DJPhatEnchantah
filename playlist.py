@@ -5,6 +5,7 @@ import id3reader
 import time
 from echonest.remix.action import render
 from tempo_adj import make_crossfade
+from database import SongDatabase
 
 TEMPO_THRESHOLD = 2
 SCORE_THRESHOLD = 0.60
@@ -13,18 +14,21 @@ class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
         self.length = numberOfsongs # length in terms of #songs, not duration
         self.dirs = os.listdir('./'+folder)
+        #calling from database        
+        self.db = SongDatabase(folder,'tune_pickle')
+        self.usable_songs = self.db.usable_songs()
         self.build_playlist(folder+'/'+baseSong, self.length)
         
     def build_playlist(self, path_to_song, numberOfSongs):
-        id3r = id3reader.Reader(path_to_song)
-        basesong_name = id3r.getValue('title')
-        baseartist = id3r.getValue('performer')
-        print 'Adding %s to playlist' % basesong_name
-        original = song.search(title=basesong_name, artist=baseartist, results=1)
+        base_song = self.db.get_entry(path_to_song)
+        print base_song
+        print 'Adding %s to playlist' % base_song['Title']
 
-        if original:
-            self.baseSong = Tune(path_to_song, original[0].artist_name, original[0].title, original[0].audio_summary['tempo'])
+        if base_song['Usable']:
+            self.baseSong = Tune(path_to_song, base_song['Artist'], base_song['Title'], base_song['Tempo'], 
+                            self.db.get_pickle(base_song['Pickle_Path']))
             self.playlist = [self.baseSong]
+            self.added = [base_song['File_Path']]
             score_board = {} # Store songs that are compatible but at the time outside the tempo range
             not_compatible = {} # Store rejected songs
             i = 0 # index of item in song folder/directory
@@ -34,78 +38,50 @@ class Playlist():
                 try:
                     self.max_tempo = max([tune.bpm for tune in self.playlist])
                     self.min_tempo = min([tune.bpm for tune in self.playlist])
-                    added = [j.songName for j in self.playlist]
-                    new_song = False
-                    try: path = 'song_test/' + self.dirs[i]
+                    try: new_song = self.usable_songs[i]
                     except IndexError:
                         i = 0
-                        k += 1 
-                        # print 'Songs exhausted before length of playlist satisfied. Returning current result.'
-                        # for i in self.playlist:
-                        #     print i.songName, i.bpm
-                        # return self.playlist
-
-                    # Set search values for current song
-                    id3r = id3reader.Reader(path)
-                    artist = id3r.getValue('performer')
-                    song_name = id3r.getValue('title')
+                        k += 1
 
                     # If current song is the original song (in that same folder), skip
-                    if song_name == basesong_name and artist == baseartist: 
+                    if new_song['File_Path'] == base_song['File_Path']: 
                         i += 1
-
                     # Else searches the memoized scoreboard to see if it is there. If so
                     # check if it is within the tempo range, if so add it to the playlist.
-                    elif song_name in score_board:                    
-                        if abs(self.max_tempo - score_board[song_name]) <= TEMPO_THRESHOLD \
-                            or abs(self.min_tempo - score_board[song_name]) <= TEMPO_THRESHOLD:
-                            try:
-                                tune = Tune(path, song_name, artist, score_board[song_name])
-                                self.playlist.append(tune)
-                                print "Adding %s to playlist" %song_name
-                                score_board.pop(song_name, None)
-                                i = 0
-                            except RuntimeError:
-                                pass
+                    elif new_song['File_Path'] in score_board:                    
+                        if abs(self.max_tempo - score_board[new_song['File_Path']]) <= TEMPO_THRESHOLD \
+                        or abs(self.min_tempo - score_board[new_song['File_Path']]) <= TEMPO_THRESHOLD:
+                            self.add(new_song)
+                            score_board.pop(new_song['File_Path'])
+                            i = 0
                         else:
                             i += 1
-
-                    elif song_name in not_compatible:
+                    elif new_song['File_Path'] in not_compatible:
                         i += 1
-
-                    # If song is completely new then it initiates an ECHONEST search        
-                    else:
-                        new_song = song.search(title=song_name, artist=artist, results=1)
-                        i += 1
-
-                    # If a result is returned, and the score and tempo are compatible, then add it to the playlist
-                    if new_song:
-                        # print new_song[0].title, new_song[0].audio_summary['tempo']
-                        score, withinTempoRange = self.compare_songs(original[0], new_song[0]) 
+                    elif new_song:
+                        score, withinTempoRange = self.compare_songs(base_song, new_song) 
                         if score <= SCORE_THRESHOLD and withinTempoRange \
-                            and new_song[0].title not in not_compatible \
-                            and new_song[0].title not in added:
-                            try:
-                                self.playlist.append(Tune(path, new_song[0].title, 
-                                    new_song[0].artist_name, new_song[0].audio_summary['tempo']))
-                                print "Adding %s to playlist" %new_song[0].title
-                                i = 0
-                            except RuntimeError:
-                                pass
-
+                            and new_song['File_Path'] not in self.added:
+                            self.add(new_song)
+                            i = 0
                         # Else memoize it in the scoreboard if it is not there already    
                         elif score <= SCORE_THRESHOLD \
-                            and new_song[0].title not in score_board \
-                            and new_song[0].title not in added:
-                            score_board[new_song[0].title] = new_song[0].audio_summary['tempo']
-
+                            and new_song['File_Path'] not in score_board \
+                            and new_song['File_Path'] not in self.added:
+                            score_board[new_song['File_Path']] = new_song['Tempo']
                         else:
-                            not_compatible[new_song[0].title] = 0
+                            not_compatible[new_song['File_Path']] = 0
                 except util.EchoNestAPIError:
                     print '\nAPI rate limit has been exceeded. The program will resume in 60 seconds.\n'
                     time.sleep(60)
         else:
             print 'Try another song.'
+
+    def add(self, new_song):
+        tune = Tune(new_song['File_Path'], new_song['Title'], new_song['Artist'], new_song['Tempo'], self.db.get_pickle(new_song['Pickle_Path']))
+        self.playlist.append(tune)
+        self.added.append(new_song['File_Path'])
+        print "Adding %s to playlist" %new_song['Title']
 
     def sort_playlist(self):
         new = []
@@ -116,15 +92,15 @@ class Playlist():
 
         self.playlist = new
         
-    def compare_songs(self, baseSong, candidateSong):
+    def compare_songs(self, baseSong, otherSong):
         score = 0
         # based on danceability, liveness, energy and tempo
-        for i in ['danceability', 'liveness', 'energy']:
-            score += abs(baseSong.audio_summary[i] - candidateSong.audio_summary[i])
+        for i in ['Danceability', 'Liveness', 'Energy']:
+            score += abs(baseSong[i] - otherSong[i])
 
         # checks if candidate song is within tempo range of the last song in the playlist
-        if abs(self.max_tempo - candidateSong.audio_summary['tempo']) <= TEMPO_THRESHOLD \
-            or abs(self.min_tempo - candidateSong.audio_summary['tempo']) <= TEMPO_THRESHOLD:
+        if abs(self.max_tempo - otherSong['Tempo']) <= TEMPO_THRESHOLD \
+            or abs(self.min_tempo - otherSong['Tempo']) <= TEMPO_THRESHOLD:
             return score, True
         else:
             return score, False
@@ -132,7 +108,7 @@ class Playlist():
 def main():
     # Initiate playlist with a base song and length
     START = time.time()
-    a = Playlist('song_test', "Love Story - Taylor Swift.mp3", 10)
+    a = Playlist('song_test', "Future Islands/Singles/01 Seasons (Waiting On You).mp3", 3)
     a.sort_playlist()
 
     ordering = ['start'] + ['middle']*(len(a.playlist)-2) + ['end']
@@ -156,7 +132,7 @@ def main():
     # Add starting and ending indices of bars of each song in real_playlist
     for i in rp:
         print "Mixing %s" %i[0].songName
-        i[2], i[3] = i[0].choose_jump_point(position=i[1])
+        i[2], i[3] = i[0].choose_jump_point2(position=i[1])
 
     # print rp: [[<tune.Tune instance at 0x7f848b1149e0>, 'start', 0, 66], 
     # [<tune.Tune instance at 0x7f8489d7cfc8>, 'middle', 14, 64], 
