@@ -53,11 +53,13 @@ class Tune():
             self.song_map = song_map
         else:
             self.song_map = []
+            lyrics, lrc = self.find_lyrics()
+            if lyrics and lrc:
+                self.get_song_map(lyrics,lrc) 
 
         # Set further attributes through class methods
-        lyrics, lrc = self.find_lyrics()
-        if lyrics and lrc:
-            self.get_song_map(lyrics,lrc)
+
+        self.chorus_count = len([i for i in self.song_map if i[2] == 'chorus'])
 
     def find_lyrics(self):
         """Retrieves lyrics and timestamped lyrics for the tune"""
