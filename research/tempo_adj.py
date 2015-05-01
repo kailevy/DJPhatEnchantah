@@ -49,6 +49,25 @@ def make_crossfade(song1,song2,start1,start2,fade_amt):
     # print 1 
     #render([crossed_song], 'cross1.mp3', True)
     return [crossed_song]
+
+
+def make_crossmatch(song1,song2,start1,start2,fade_amt):
+    """crossfades two tracks at desired times
+        inputs:
+            2 tracks(str-path)
+            2 times to start(int)
+            amount to fade by(int/float)
+            what to turn the cross faded song into(str)
+
+        outputs: a short track transition
+
+    """
+    # song1 = audio.LocalAudioFile(track1)
+    # song2 = audio.LocalAudioFile(track2)
+    crossed_song = Crossmatch( (song1, song2), (start1, start2), fade_amt)
+    # print 1 
+    #render([crossed_song], 'cross1.mp3', True)
+    return [crossed_song]
 # transition = make_crossfade('chorusred.mp3','chorusbs.mp3',21.6, 0.0, 5)
 # render(transition, 'transition.mp3', True)
 #make_crossfade('Red.mp3','Blank Space.mp3',36.93728,232.88604,25,'cross1.mp3')
@@ -105,6 +124,7 @@ def adjust_tempo(input_filename, output_filename,ratio):
             # dirac only works on raw data, and only takes floating-point ratios
             beat_audio = beat.render()
             scaled_beat = dirac.timeScale(beat_audio.data, ratio)
+            print scaled_beat
             # Create a new AudioData object from the scaled data
             ts = audio.AudioData(ndarray=scaled_beat, shape=scaled_beat.shape, 
                             sampleRate=audiofile.sampleRate, numChannels=scaled_beat.shape[1])
@@ -113,8 +133,7 @@ def adjust_tempo(input_filename, output_filename,ratio):
 
     # Assemble and write the output data
     out = audio.assemble(collect, numChannels=2)
-    print 'beats', out.analysis.beats
-    out.encode(output_filename)
+    # out.encode(output_filename)
 
 def balance_tempo(song1,song2):
     audiofile = Tune(song1, 'Burn', 'Ellie Goulding', 88.0)
@@ -133,7 +152,7 @@ def balance_tempo(song1,song2):
 
 
 
-# balance_tempo('Burn.mp3','Love Me Like You Do.mp3')
+# balance_tempo('song_test/Burn.mp3','song_test/Love Me Like You Do.mp3')
 # adjust_tempo('Blank Space.mp3','tempo_adj_BS.mp3')    
 # audiofile = audio.LocalAudioFile('tempo_adj_BS.mp3')
 # print audiofile.analysis.tempo

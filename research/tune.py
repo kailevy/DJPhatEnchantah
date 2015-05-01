@@ -54,13 +54,14 @@ class Tune():
         # Set further attributes through class methods
         self.find_lyrics()
         self.get_song_map()
+        self.chorus_count = len([i for i in self.song_map if i[2] == 'chorus'])
 
     def find_lyrics(self):
         """Retrieves lyrics and timestamped lyrics for the tune"""
         try: 
             json_response = self.get_json()
-            self.lyrics = json_response['track']['lyrics'] # Get lyrics alone
             self.lrc = json_response['track']['lrc'] # Get lyrics with timestamps
+            self.lyrics = [i['line'] for i in self.lrc] # Get just the words
         except KeyError:
             # print 'Song lyrics could not be processed'
             # sys.exit()
@@ -84,12 +85,15 @@ class Tune():
         that linearly maps out the lyrics of the song"""
 
         # Get all the choruses in the lrc
-        choruses = self.find_chorus_freq(self.lyrics.split('\n'))
+        choruses = self.find_chorus_freq(self.lyrics)
 
         # Add each line to chorus_lines
         chorus_lines = []
         for i in choruses:
-            chorus_lines += [j.strip() for j in i.split('\n')]
+            if i not in chorus_lines:
+                chorus_lines += [j.strip() for j in i.split('\n')]
+
+        # print chorus_lines
 
         verse, chorus, self.song_map = [], [], []
         i = 0
@@ -100,9 +104,11 @@ class Tune():
         while i < len(self.lrc):
             if self.lrc[i]['line']:
                 if self.lrc[i]['line'].strip() in chorus_lines:
+                    # print 'chorus'
                     chorus.append(self.lrc[i]['milliseconds'])
                 else:
                     verse.append(self.lrc[i]['milliseconds'])
+                    # print 'verse'
             if not self.lrc[i]['line'] or i==len(self.lrc)-1:
                 if verse:
                     self.song_map.append([int(verse[0]), int(verse[-1]), 'verse'])
@@ -111,6 +117,9 @@ class Tune():
                     self.song_map.append([int(chorus[0]), int(chorus[-1]), 'chorus'])
                     chorus = []
             i += 1
+
+        self.song_map = sorted([i for i in self.song_map if i[0] != i[1]], key=lambda x:x[0])
+        # print 'before', self.song_map
 
         self.song_map = self.group_map(self.song_map)
 
@@ -123,9 +132,10 @@ class Tune():
 
         for par in split_pars:
             # print par
-            if 'chorus' in par.split('\n')[0].strip().lower():
-                if len(par.split('\n')) > 2:
-                    chorus += par.split('\n')[1:]
+            # if 'chorus' in par.split('\n')[0].strip().lower():
+            #     if len(par.split('\n')) > 2:
+            #         print '[CHORUS]', par.split('\n')[1:]
+            #         chorus += par.split('\n')[1:]
             par_freqs.append(get_words(par))
 
         for i in range(len(split_pars)):
@@ -148,7 +158,7 @@ class Tune():
         elif self.position == 'middle':
             a = self.find_start()
             b = self.find_tail()
-            # prit a[0], b[1]
+            # print a[0], b[1]
             return a[0], b[1]
 
     def find_start(self):
@@ -158,38 +168,46 @@ class Tune():
         found_first_verse = False
         chor_count = 0
         i = 0
+        if self.chorus_count <= 2:
+            CHORUS_THRESHOLD = self.chorus_count - 1
+        elif self.chorus_count <= 5:
+            CHORUS_THRESHOLD = self.chorus_count - 2
+        else:
+            CHORUS_THRESHOLD = self.chorus_count - 3
 
         # Filter out self.song_map so that the only parts available are before
         # the second chorus
         available = []
-        while chor_count <= 1 and i < len(self.song_map):
+        while chor_count < CHORUS_THRESHOLD and i < len(self.song_map):
             if self.song_map[i][2] == 'chorus':
                 chor_count += 1
-            if chor_count > 1:
+            if chor_count > CHORUS_THRESHOLD:
                 pass
             else:
                 available.append(self.song_map[i])
             i += 1
 
-        # Find 6 second gap into a verse. If can't find any then return first
-        # 6 second gap, else return first gap. Uncomment the print statements
-        # to see which option the program went for
+        print available
+
+        # Find 6 second gap into a verse. 
         for i in range(len(available)-1):
-            next_start = available[i+1][0]
-            end = available[i][1]
-            if next_start - end >= 6:
-                if available[i+1][2] == 'verse':
-                    # print 'found verse'
+            if available[i+1][2] == 'verse':
+                next_start = available[i+1][0]
+                end = available[i][1]
+                if next_start - end >= 6:
+                    print 'found verse'
                     return self.get_bars((next_start+end)/2.0, None)
 
+        #If can't find any then return first gap into a verse.
         for i in range(len(available)-1):
-            next_start = available[i+1][0]
-            end = available[i][1]
-            if next_start - end >= 6:
-                # print 'found random gap'
+            if available[i+1][2] == 'verse':
+                next_start = available[i+1][0]
+                end = available[i][1]
+                print 'settled'
                 return self.get_bars((next_start+end)/2.0, None)
         
-        # print 'settled'
+        # This code should never be executed
+        print 'settled'
         if len(available) > 1:
             return self.get_bars((available[1][0]+available[0][1])/2.0, None)
         else:
@@ -202,23 +220,32 @@ class Tune():
         to_play = [0]
         i = 0
         chor_count = 0
-        
+        if self.chorus_count <= 2:
+            CHORUS_THRESHOLD = self.chorus_count - 1
+        elif self.chorus_count <= 5:
+            CHORUS_THRESHOLD = self.chorus_count - 2
+        else:
+            CHORUS_THRESHOLD = self.chorus_count - 3
+
         # Remove sections from the available list up to but not including the 
         # second chorus. Uncomment print statements to see which option the 
         # program went for
         available = deepcopy(self.song_map)
-        while chor_count < 2:
+
+        while chor_count < CHORUS_THRESHOLD:
             if available[0][2] == 'chorus':
                 chor_count += 1
-            if chor_count < 2:
+            if chor_count <= CHORUS_THRESHOLD:
                 available.pop(0)
+
+        print available
 
         while i < len(available):
             end = available[i][1]
             end_char = available[i][2]
             try: next_start = available[i+1][0]
             except IndexError: next_start = 0
-            # if there's a long enough silence...
+            # if there's a long enough silence right after the chorus
             if next_start and next_start-end >= 6 and end_char == 'chorus':
                 to_play.append((end+next_start)/2.0)
                 # print 'found chorus'   
@@ -233,44 +260,24 @@ class Tune():
                     to_play.append(i[1])
 
         return self.get_bars(to_play[0], to_play[1])
-        
 
     def group_map(self, oldmap):
-        oldmap = [i for i in oldmap if i[0] != i[1]]
-        # print oldmap
-        time_cursor = 0
         newmap = []
         i = 0
-        accept = True
 
-        # Complicated while loop to record start and end times of sections
-        # taking into account the fact that one chorus may be split into two 
-        # paragraphs
-        while i < len(oldmap)-1:
-            start = oldmap[i][0]
-            end = oldmap[i][1]
-            if start < time_cursor or start == end:
-                accept = False
-            else:
-                next_start = oldmap[i+1][0]
-                accept = True
-            while next_start-end<=5000 and next_start-end>=0 and oldmap[i][2] == oldmap[i+1][2] and i+1<len(oldmap):
-                i += 1
-                try: end, next_start = oldmap[i][1], oldmap[i+1][0]
-                except IndexError: 
-                    newmap.append([start/1000.0, oldmap[i][1]/1000.0, oldmap[i][2]])
-                    time_cursor = oldmap[i][1]
-                    break
-            else:
-                if accept:
-                    newmap.append([start/1000.0, end/1000.0, oldmap[i][2]])
-                    time_cursor = end
-                    if next_start and i == len(oldmap)-2:
-                        newmap.append([next_start/1000.0, oldmap[i+1][1]/1000.0, oldmap[i][2]])
-                        time_cursor = oldmap[i+1][1]
+        while i < len(oldmap):
+            start = oldmap[i][0]/1000.0
+            current_section = oldmap[i][2]
+            try:
+                while oldmap[i+1][2] == current_section:
+                    i += 1
+            except IndexError: pass
+            end = oldmap[i][1]/1000.0
+            assert(oldmap[i][2] == current_section)
+            newmap.append([start, end, current_section])
             i += 1
 
-        return [i for i in newmap if i[0] != i[1]]
+        return newmap
  
     def find_chorus_bars(self):
         """Finds and returns the start and end bars of each chorus found in the
@@ -299,7 +306,7 @@ class Tune():
 
         startScore, endScore = 10000000, 10000000
         first_bar = 0
-        last_bar = 1
+        last_bar = len(self.bars)-1
         found_first = False
 
         for i, bar in enumerate(self.bars):
@@ -335,10 +342,14 @@ if __name__ == '__main__':
 
 
     bs = Tune(args.fileName, args.songName, args.artist)
-    print bs.songName, bs.artist
+    # print bs.song_map
+    # for i in bs.lrc: print i
+    # print bs.song_map
     # bars = bs.find_chorus_bars()
     # bars = bs.choose_jump_point(position='middle')
-    # print bars
+
+    # # print bars
+    # print bs.bars[0].start, 'time'
     # render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
     # for i in range(len(bars)):
     #     render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)

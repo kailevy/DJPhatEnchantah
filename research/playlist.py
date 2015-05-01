@@ -6,6 +6,9 @@ import time
 from echonest.remix.action import render
 from tempo_adj import make_crossfade
 
+TEMPO_THRESHOLD = 2
+SCORE_THRESHOLD = 0.60
+
 class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
         self.length = numberOfsongs # length in terms of #songs, not duration
@@ -54,8 +57,8 @@ class Playlist():
                     # Else searches the memoized scoreboard to see if it is there. If so
                     # check if it is within the tempo range, if so add it to the playlist.
                     elif song_name in score_board:                    
-                        if abs(self.max_tempo - score_board[song_name]) <= 10 \
-                            or abs(self.min_tempo - score_board[song_name]) <= 10:
+                        if abs(self.max_tempo - score_board[song_name]) <= TEMPO_THRESHOLD \
+                            or abs(self.min_tempo - score_board[song_name]) <= TEMPO_THRESHOLD:
                             try:
                                 tune = Tune(path, song_name, artist, score_board[song_name])
                                 self.playlist.append(tune)
@@ -79,7 +82,7 @@ class Playlist():
                     if new_song:
                         # print new_song[0].title, new_song[0].audio_summary['tempo']
                         score, withinTempoRange = self.compare_songs(original[0], new_song[0]) 
-                        if score <= 0.60 and withinTempoRange \
+                        if score <= SCORE_THRESHOLD and withinTempoRange \
                             and new_song[0].title not in not_compatible \
                             and new_song[0].title not in added:
                             try:
@@ -91,7 +94,7 @@ class Playlist():
                                 pass
 
                         # Else memoize it in the scoreboard if it is not there already    
-                        elif score <= 0.60 \
+                        elif score <= SCORE_THRESHOLD \
                             and new_song[0].title not in score_board \
                             and new_song[0].title not in added:
                             score_board[new_song[0].title] = new_song[0].audio_summary['tempo']
@@ -120,8 +123,8 @@ class Playlist():
             score += abs(baseSong.audio_summary[i] - candidateSong.audio_summary[i])
 
         # checks if candidate song is within tempo range of the last song in the playlist
-        if abs(self.max_tempo - candidateSong.audio_summary['tempo']) <= 10 \
-            or abs(self.min_tempo - candidateSong.audio_summary['tempo']) <= 10:
+        if abs(self.max_tempo - candidateSong.audio_summary['tempo']) <= TEMPO_THRESHOLD \
+            or abs(self.min_tempo - candidateSong.audio_summary['tempo']) <= TEMPO_THRESHOLD:
             return score, True
         else:
             return score, False
@@ -152,6 +155,7 @@ def main():
     output_song = []
     # Add starting and ending indices of bars of each song in real_playlist
     for i in rp:
+        print "Mixing %s" %i[0].songName
         i[2], i[3] = i[0].choose_jump_point(position=i[1])
 
     # print rp: [[<tune.Tune instance at 0x7f848b1149e0>, 'start', 0, 66], 
@@ -163,7 +167,7 @@ def main():
         # l1, l2 are lists of order [self.tune, self.position, start_bar_index, end_bar_index]
 
         # Start cutting at the final_bar of the first song
-        final_bar = l1[0].bars[l1[3]]
+        final_bar = l1[0].bars[l1[3]-1: l1[3]+1]
 
         # Cut into the first two bars of the second song
         first_bar = l2[0].bars[l2[2]: l2[2]+2]
@@ -173,19 +177,19 @@ def main():
         duration = sum([i.duration for i in first_bar])
 
         # Return iterable cross faded object
-        return make_crossfade(l1[0].tune, l2[0].tune, final_bar.start, first_bar[0].start, duration)
+        return make_crossfade(l1[0].tune, l2[0].tune, final_bar[0].start, first_bar[0].start, duration)
 
     for i in range(len(rp)):
         if rp[i][1] == 'start':
-            output_song += rp[i][0].bars[rp[i][2] : rp[i][3]]
+            output_song += rp[i][0].bars[: rp[i][3]-1]
         if rp[i][1] == 'middle':
-            output_song += rp[i][0].bars[rp[i][2]+2 : rp[i][3]]
+            output_song += rp[i][0].bars[rp[i][2]+2 : rp[i][3]-1]
         if rp[i][1] == 'end':
-            output_song += rp[i][0].bars[rp[i][2]+2 : rp[i][3]+1]
+            output_song += rp[i][0].bars[rp[i][2]+2 :]
         try: output_song += make_transition(rp[i], rp[i+1])
         except IndexError: pass
 
     render(output_song, 'fullMix.mp3', True)
     print '\nTook %f seconds to compile and render playlist' %round(time.time()-START, 1)
 
-main()s
+main()
