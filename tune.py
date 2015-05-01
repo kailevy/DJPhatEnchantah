@@ -2,6 +2,7 @@ import urllib2, urllib, os, json, math, pyechonest, sys, argparse
 
 import echonest.remix.audio as audio
 from echonest.remix.action import render, Crossfade
+from copy import deepcopy
 
 DISPLAY_KEY = os.environ.get('LYRICFIND_DISPLAY_API_KEY')
 LRC_KEY = os.environ.get('LYRICFIND_LRC_API_KEY')
@@ -73,8 +74,8 @@ class Tune():
 
     def get_json(self):
         """Makes API request to retrieve song's lyrics"""
-        artist = self.artist.replace(' ', '+')
-        song_name = self.songName.replace(' ', '+')
+        artist = self.artist.replace(' ', '+').encode('ascii', 'ignore')
+        song_name = self.songName.replace(' ', '+').encode('ascii', 'ignore')
         end = urllib.urlencode({'apikey': DISPLAY_KEY, 'lrckey': LRC_KEY, 
                                 'territory': 'US', 'reqtype': 'default',
                                 'format': 'lrc', 'output': 'json',
@@ -93,7 +94,8 @@ class Tune():
         # Add each line to chorus_lines
         chorus_lines = []
         for i in choruses:
-            chorus_lines += [j.strip() for j in i.split('\n')]
+            if i not in chorus_lines:
+                chorus_lines += [j.strip() for j in i.split('\n')]
 
         verse, chorus = [], []
         i = 0
@@ -116,7 +118,9 @@ class Tune():
                     chorus = []
             i += 1
 
-        return self.song_map   
+        self.song_map = self.group_map(sorted([i for i in self.song_map if i[0] != i[1]], key=lambda x:x[0]))
+
+        return self.song_map
 
     def find_chorus_freq(self, split_pars):
         """Finds chorus based off of similar word frequencies"""
@@ -126,10 +130,6 @@ class Tune():
         # print split_pars
 
         for par in split_pars:
-            # print par
-            if 'chorus' in par.split('\n')[0].strip().lower():
-                if len(par.split('\n')) > 2:
-                    chorus += par.split('\n')[1:]
             par_freqs.append(get_words(par))
 
         for i in range(len(split_pars)):
@@ -175,6 +175,140 @@ class Tune():
         return self.get_bars(to_play[0],to_play[1])   
         #
 
+    def choose_jump_point2(self, position='start'):
+        """Attempts to choose the bars of the track by taking the start of one song, and 
+        setting the end to be after the 2nd + chorus as long as there is no vocals immediately
+        after"""
+        self.position = position
+
+        if self.position == 'start':
+            return self.find_tail()
+        elif self.position == 'end':
+            return self.find_start()
+        elif self.position == 'middle':
+            a = self.find_start()
+            b = self.find_tail()
+            # print a[0], b[1]
+            return a[0], b[1]
+
+    def find_start(self):
+        """Finds the part to cut INTO the song from another song.
+        Has to be before the verse before the second chorus, because find_tail 
+        finds anything after the second chorus.""" 
+        found_first_verse = False
+        chor_count = 0
+        i = 0
+        if self.chorus_count <= 2:
+            CHORUS_THRESHOLD = self.chorus_count - 1
+        elif self.chorus_count <= 5:
+            CHORUS_THRESHOLD = self.chorus_count - 2
+        else:
+            CHORUS_THRESHOLD = self.chorus_count - 3
+
+        # Filter out self.song_map so that the only parts available are before
+        # the second chorus
+        available = []
+        while chor_count < CHORUS_THRESHOLD and i < len(self.song_map):
+            if self.song_map[i][2] == 'chorus':
+                chor_count += 1
+            if chor_count > CHORUS_THRESHOLD:
+                pass
+            else:
+                available.append(self.song_map[i])
+            i += 1
+
+        print available
+
+        # Find 6 second gap into a verse. 
+        for i in range(len(available)-1):
+            if available[i+1][2] == 'verse':
+                next_start = available[i+1][0]
+                end = available[i][1]
+                if next_start - end >= 6:
+                    print 'found verse'
+                    return self.get_bars((next_start+end)/2.0, None)
+
+        #If can't find any then return first gap into a verse.
+        for i in range(len(available)-1):
+            if available[i+1][2] == 'verse':
+                next_start = available[i+1][0]
+                end = available[i][1]
+                print 'settled'
+                return self.get_bars((next_start+end)/2.0, None)
+        
+        # This code should never be executed
+        print 'settled'
+        if len(available) > 1:
+            return self.get_bars((available[1][0]+available[0][1])/2.0, None)
+        else:
+            return self.get_bars(available[0][0], None)
+
+
+    def find_tail(self):
+        """Finds the part of the song to cut OUT OF. Has to be after the second
+        chorus."""
+        to_play = [0]
+        i = 0
+        chor_count = 0
+        if self.chorus_count <= 2:
+            CHORUS_THRESHOLD = self.chorus_count - 1
+        elif self.chorus_count <= 5:
+            CHORUS_THRESHOLD = self.chorus_count - 2
+        else:
+            CHORUS_THRESHOLD = self.chorus_count - 3
+
+        # Remove sections from the available list up to but not including the 
+        # second chorus. Uncomment print statements to see which option the 
+        # program went for
+        available = deepcopy(self.song_map)
+
+        while chor_count < CHORUS_THRESHOLD:
+            if available[0][2] == 'chorus':
+                chor_count += 1
+            if chor_count <= CHORUS_THRESHOLD:
+                available.pop(0)
+
+        print available
+
+        while i < len(available):
+            end = available[i][1]
+            end_char = available[i][2]
+            try: next_start = available[i+1][0]
+            except IndexError: next_start = 0
+            # if there's a long enough silence right after the chorus
+            if next_start and next_start-end >= 6 and end_char == 'chorus':
+                to_play.append((end+next_start)/2.0)
+                # print 'found chorus'   
+                break
+            else: i += 1
+        # if we reach the end of the verses before that, we just take the last chorus
+        # this should happen if we have no verse after the chorus to measure a silence against
+        else: 
+            for i in reversed(available):
+                if i[2] == 'chorus':
+                    # print 'settled'
+                    to_play.append(i[1])
+
+        return self.get_bars(to_play[0], to_play[1])
+
+    def group_map(self, oldmap):
+        newmap = []
+        i = 0
+
+        while i < len(oldmap):
+            start = oldmap[i][0]/1000.0
+            current_section = oldmap[i][2]
+            try:
+                while oldmap[i+1][2] == current_section:
+                    i += 1
+            except IndexError: pass
+            end = oldmap[i][1]/1000.0
+            assert(oldmap[i][2] == current_section)
+            newmap.append([start, end, current_section])
+            i += 1
+
+        return newmap
+
     def find_chorus_bars(self):
         """Finds and returns the start and end bars of each chorus found in the
         song map"""
@@ -211,7 +345,7 @@ class Tune():
         # are anomalies)
         return [i for i in all_chorus if i[1] - i[0] > 4]
 
-    def get_bars(self, start_time, end_time):
+    def get_bars(self, start_time, end_time=None):
         """Finds and returns the indices of the bars that start and end of the 
         chorus. This function works by, keeping track of the scores of the current
         and previous bars. If the current score becomes higher, it means that the
@@ -219,7 +353,7 @@ class Tune():
 
         startScore, endScore = 10000000, 10000000
         first_bar = 0
-        last_bar = 1
+        last_bar = len(self.bars)-1
         found_first = False
 
         for i, bar in enumerate(self.bars):
@@ -228,6 +362,12 @@ class Tune():
                 if startScore > prevStartScore: 
                     first_bar = i-1
                     found_first = True
+
+            if end_time:
+                prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
+                if endScore > prevEndScore: 
+                    last_bar = i-1
+                    break
 
             prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
             if endScore > prevEndScore: 
