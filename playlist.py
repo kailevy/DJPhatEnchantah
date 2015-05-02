@@ -133,6 +133,7 @@ def main():
     for i in rp:
         print "Mixing %s" %i[0].songName
         i[2], i[3] = i[0].choose_jump_point2(position=i[1])
+        # i[2], i[3] = i[0].choose_jump_point()
 
     # print rp: [[<tune.Tune instance at 0x7f848b1149e0>, 'start', 0, 66], 
     # [<tune.Tune instance at 0x7f8489d7cfc8>, 'middle', 14, 64], 

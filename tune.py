@@ -47,6 +47,8 @@ class Tune():
         self.bars = getattr(self.tune.analysis, 'bars')
         self.beats = getattr(self.tune.analysis, 'beats')
         self.fade = getattr(self.tune.analysis, 'end_of_fade_in')
+        if not self.fade:
+            self.fade = 0
         self.songName = name
         self.artist = artist
         if song_map:
@@ -149,10 +151,10 @@ class Tune():
         to_play = [0]
         i = 0
         chor_count = 0
-        # print self.song_map
+        print self.song_map
         while i < len(self.song_map) - 1:
             # go through 2 choruses
-            while chor_count < 2:
+            while chor_count < 1:
                 if self.song_map[i][2] == 'chorus':
                     chor_count += 1
                     # print self.song_map[i][1]
@@ -162,8 +164,8 @@ class Tune():
             end_char = self.song_map[i][2]
             next_start = self.song_map[i+1][0]
             # if there's a long enough silence...
-            if next_start-end >= 6000 and end_char == 'chorus':
-                to_play.append((end+next_start)/2000.0)
+            if next_start-end >= 6 and end_char == 'chorus':
+                to_play.append((end+next_start)/2.0)
                 break   
             else: i += 1
         # if we reach the end of the verses before that, we just take the last chorus
@@ -171,7 +173,7 @@ class Tune():
         else: 
             for i in reversed(self.song_map):
                 if i[2] == 'chorus':
-                    to_play.append(i[1]/1000.0)
+                    to_play.append(i[1]/1.0)
                     break
 
         return self.get_bars(to_play[0],to_play[1])   
@@ -219,7 +221,7 @@ class Tune():
                 available.append(self.song_map[i])
             i += 1
 
-        print available
+        # print available
 
         # Find 6 second gap into a verse. 
         for i in range(len(available)-1):
@@ -227,7 +229,7 @@ class Tune():
                 next_start = available[i+1][0]
                 end = available[i][1]
                 if next_start - end >= 6:
-                    print 'found verse'
+                    # print 'found verse'
                     return self.get_bars((next_start+end)/2.0, None)
 
         #If can't find any then return first gap into a verse.
@@ -239,7 +241,7 @@ class Tune():
                 return self.get_bars((next_start+end)/2.0, None)
         
         # This code should never be executed
-        print 'settled'
+        # print 'settled'
         if len(available) > 1:
             return self.get_bars((available[1][0]+available[0][1])/2.0, None)
         else:
@@ -270,7 +272,7 @@ class Tune():
             if chor_count <= CHORUS_THRESHOLD:
                 available.pop(0)
 
-        print available
+        # print available
 
         while i < len(available):
             end = available[i][1]
@@ -358,6 +360,9 @@ class Tune():
         last_bar = len(self.bars)-1
         found_first = False
 
+        # print self.fade
+
+
         for i, bar in enumerate(self.bars):
             if not found_first:
                 prevStartScore, startScore = startScore, abs(bar.start - self.fade - start_time)
@@ -371,12 +376,14 @@ class Tune():
                     last_bar = i-1
                     break
 
-            prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
-            if endScore > prevEndScore: 
-                last_bar = i-1
-                break
-
-        return first_bar, last_bar
+            # prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
+            # if endScore > prevEndScore: 
+            #     last_bar = i-1
+            #     break
+        if end_time:
+            return first_bar, last_bar
+        else:
+            return first_bar,len(self.bars)-1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
