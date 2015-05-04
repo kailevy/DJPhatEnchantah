@@ -49,45 +49,52 @@ class SongDatabase():
                     try:
                         path = os.path.join(subdir,song_file)
                         path_db = self.escape(path)
+                        print path
                         if not self.get_entry(path):
                             id3r = id3reader.Reader(path)
                             artist = id3r.getValue('performer')
                             song_name = id3r.getValue('title')
-                            artist_db = self.escape(artist)
-                            song_name_db = self.escape(song_name)
-                            echo_song = song.search(title=song_name, artist=artist, results=1)
-                            if not echo_song:
+                            if not artist or not song_name:
                                 usable = False
                                 insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
                                     VALUES (%s, %s, %s, %s, NULL, NULL, NULL, NULL, NULL)"
-                                cur.execute(insert,(path_db, artist_db, song_name_db, usable))
-                            elif echo_song:
-                                tempo = echo_song[0].audio_summary['tempo']
-                                danceability = echo_song[0].audio_summary['danceability']
-                                liveness = echo_song[0].audio_summary['liveness']
-                                energy = echo_song[0].audio_summary['energy']
-                                usable = False
-                                # print tempo, danceability, liveness, energy
-                                try: 
-                                    tune_obj = Tune(path,artist,song_name)
-                                    usable = bool(tune_obj.song_map)
-                                    pickle_path = None
-                                except:
-                                    pass                                
-                                if usable:
-                                    pickle_path = self.pickle_dir + '/' + artist + '_' + song_name + '.txt'
-                                    output = open(pickle_path,'wb')
-                                    pickle.dump(tune_obj.song_map, output)
+                                cur.execute(insert,(path_db,'unknown','unknown', usable))
+                            else:
+                                artist_db = self.escape(artist)
+                                song_name_db = self.escape(song_name)
+                                echo_song = song.search(title=song_name, artist=artist, results=1)
+                                if not echo_song:
+                                    usable = False
                                     insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                                    cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy, pickle_path))
-                                else: 
-                                    # pickle_path = self.pickle_dir + '/' + artist + '_' + song_name + '.txt'
-                                    # output = open(pickle_path,'wb')
-                                    # pickle.dump(tune_obj.song_map, output)
-                                    insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
-                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)"
-                                    cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy))
+                                        VALUES (%s, %s, %s, %s, NULL, NULL, NULL, NULL, NULL)"
+                                    cur.execute(insert,(path_db, artist_db, song_name_db, usable))
+                                elif echo_song:
+                                    tempo = echo_song[0].audio_summary['tempo']
+                                    danceability = echo_song[0].audio_summary['danceability']
+                                    liveness = echo_song[0].audio_summary['liveness']
+                                    energy = echo_song[0].audio_summary['energy']
+                                    usable = False
+                                    # print tempo, danceability, liveness, energy
+                                    try: 
+                                        tune_obj = Tune(path,artist,song_name)
+                                        usable = bool(tune_obj.song_map)
+                                        pickle_path = None
+                                    except:
+                                        pass                                
+                                    if usable:
+                                        pickle_path = self.pickle_dir + '/' + song_file.replace(".mp3","") + '.txt'
+                                        output = open(pickle_path,'wb')
+                                        pickle.dump(tune_obj.song_map, output)
+                                        insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
+                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                                        cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy, pickle_path))
+                                    else: 
+                                        # pickle_path = self.pickle_dir + '/' + artist + '_' + song_name + '.txt'
+                                        # output = open(pickle_path,'wb')
+                                        # pickle.dump(tune_obj.song_map, output)
+                                        insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
+                                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)"
+                                        cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy))
                     except util.EchoNestAPIError:
                         time.sleep(60)
         
