@@ -158,15 +158,12 @@ class Tune():
         """Finds the part to cut INTO the song from another song.
         Has to be before the verse before the second chorus, because find_tail 
         finds anything after the second chorus.""" 
-        found_first_verse = False
         chor_count = 0
         i = 0
-        if self.chorus_count <= 2:
+        if self.chorus_count == 1:
             CHORUS_THRESHOLD = self.chorus_count - 1
-        elif self.chorus_count <= 5:
-            CHORUS_THRESHOLD = self.chorus_count - 2
         else:
-            CHORUS_THRESHOLD = self.chorus_count - 3
+            CHORUS_THRESHOLD = self.chorus_count // 2
 
         # Filter out self.song_map so that the only parts available are before
         # the second chorus
@@ -180,31 +177,19 @@ class Tune():
                 available.append(self.song_map[i])
             i += 1
 
-        print available
+        verse_index = [i for i,j in enumerate(available) if j[2] == 'verse']
 
-        # Find 6 second gap into a verse. 
-        for i in range(len(available)-1):
-            if available[i+1][2] == 'verse':
-                next_start = available[i+1][0]
-                end = available[i][1]
-                if next_start - end >= 6:
-                    print 'found verse'
-                    return self.get_bars((next_start+end)/2.0, None)
-
-        #If can't find any then return first gap into a verse.
-        for i in range(len(available)-1):
-            if available[i+1][2] == 'verse':
-                next_start = available[i+1][0]
-                end = available[i][1]
-                print 'settled'
-                return self.get_bars((next_start+end)/2.0, None)
-        
-        # This code should never be executed
-        print 'settled'
-        if len(available) > 1:
-            return self.get_bars((available[1][0]+available[0][1])/2.0, None)
+        # Find 6 second gap into a verse
+        if len(verse_index) <= 1:
+            print 'first verse'
+            return self.get_bars(self.song_map[0][0], None)
         else:
-            return self.get_bars(available[0][0], None)
+            for i in verse_index:
+                start_verse = available[i][0]
+                end_last_section = available[i-1][1]
+                if abs(start_verse - end_last_section) >= 4:
+                    print 'found one'
+                    return self.get_bars(available[i][0], None)
 
 
     def find_tail(self):
@@ -213,12 +198,10 @@ class Tune():
         to_play = [0]
         i = 0
         chor_count = 0
-        if self.chorus_count <= 2:
+        if self.chorus_count == 1:
             CHORUS_THRESHOLD = self.chorus_count - 1
-        elif self.chorus_count <= 5:
-            CHORUS_THRESHOLD = self.chorus_count - 2
         else:
-            CHORUS_THRESHOLD = self.chorus_count - 3
+            CHORUS_THRESHOLD = self.chorus_count // 2
 
         # Remove sections from the available list up to but not including the 
         # second chorus. Uncomment print statements to see which option the 
@@ -231,28 +214,24 @@ class Tune():
             if chor_count <= CHORUS_THRESHOLD:
                 available.pop(0)
 
+        print self.song_map
         print available
 
-        while i < len(available):
-            end = available[i][1]
-            end_char = available[i][2]
-            try: next_start = available[i+1][0]
-            except IndexError: next_start = 0
-            # if there's a long enough silence right after the chorus
-            if next_start and next_start-end >= 6 and end_char == 'chorus':
-                to_play.append((end+next_start)/2.0)
-                # print 'found chorus'   
-                break
-            else: i += 1
-        # if we reach the end of the verses before that, we just take the last chorus
-        # this should happen if we have no verse after the chorus to measure a silence against
-        else: 
-            for i in reversed(available):
-                if i[2] == 'chorus':
-                    # print 'settled'
-                    to_play.append(i[1])
+        chorus_index = [i for i,j in enumerate(available) if j[2] == 'chorus']
+        print chorus_index
 
-        return self.get_bars(to_play[0], to_play[1])
+        if len(chorus_index) == 1:
+            print 'first chorus'
+            return self.get_bars(0, available[chorus_index[0]][1])
+        else:
+            for i in chorus_index:
+                end_chorus = available[i][1]
+                try: 
+                    start_next_section = available[i+1][0]
+                    if abs(start_next_section - end_chorus) >= 4:
+                        print 'found one'
+                        return self.get_bars(available[i][0], None)
+                except IndexError: pass 
 
     def group_map(self, oldmap):
         newmap = []
@@ -269,6 +248,9 @@ class Tune():
             assert(oldmap[i][2] == current_section)
             newmap.append([start, end, current_section])
             i += 1
+
+        print oldmap
+        print newmap
 
         return newmap
  
@@ -338,10 +320,10 @@ if __name__ == '__main__':
     # for i in bs.lrc: print i
     # print bs.song_map
     # bars = bs.find_chorus_bars()
-    # bars = bs.choose_jump_point(position='middle')
+    # bars = bs.choose_jump_point(position='start')
 
     # # print bars
     # print bs.bars[0].start, 'time'
-    # render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
+    # render(bs.bars[bars[0]:bars[1]+1], 'play.mp3', True)
     # for i in range(len(bars)):
     #     render(bs.bars[max(0,bars[i][0]-1):bars[i][1]+2], str(i+1)+'chorus.mp3', True)

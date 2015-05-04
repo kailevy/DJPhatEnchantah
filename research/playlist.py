@@ -34,7 +34,7 @@ class Playlist():
                 try:
                     self.max_tempo = max([tune.bpm for tune in self.playlist])
                     self.min_tempo = min([tune.bpm for tune in self.playlist])
-                    added = [j.songName for j in self.playlist]
+                    added = [j.songName for j in self.playlist] # list of songs already added
                     new_song = False
                     try: path = 'song_test/' + self.dirs[i]
                     except IndexError:
