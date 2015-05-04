@@ -8,7 +8,7 @@ from tempo_adj import make_crossfade
 from database import SongDatabase
 
 TEMPO_THRESHOLD = 2
-SCORE_THRESHOLD = 0.60
+SCORE_THRESHOLD = 0.30
 
 class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
@@ -108,7 +108,7 @@ class Playlist():
 def main():
     # Initiate playlist with a base song and length
     START = time.time()
-    a = Playlist('song_test', "Future Islands/Singles/01 Seasons (Waiting On You).mp3", 3)
+    a = Playlist('song_test', "Taio Cruz/Dynamite/01 Dynamite.mp3", 5)
     a.sort_playlist()
 
     ordering = ['start'] + ['middle']*(len(a.playlist)-2) + ['end']

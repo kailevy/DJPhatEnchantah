@@ -365,13 +365,13 @@ class Tune():
 
         for i, bar in enumerate(self.bars):
             if not found_first:
-                prevStartScore, startScore = startScore, abs(bar.start - self.fade - start_time)
+                prevStartScore, startScore = startScore, abs(bar.start - start_time)
                 if startScore > prevStartScore: 
                     first_bar = i-1
                     found_first = True
 
             if end_time:
-                prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
+                prevEndScore, endScore = endScore, abs(bar.start - end_time)
                 if endScore > prevEndScore: 
                     last_bar = i-1
                     break
