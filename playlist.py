@@ -1,14 +1,13 @@
 from pyechonest import *
-import os 
-from tune import Tune
+import os, argparse, time
 import id3reader
-import time
 from echonest.remix.action import render
 from tempo_adj import make_crossmatch
 from database import SongDatabase
+from tune import Tune
 
 TEMPO_THRESHOLD = 2
-SCORE_THRESHOLD = 0.60
+SCORE_THRESHOLD = 0.30
 
 class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
@@ -105,10 +104,10 @@ class Playlist():
         else:
             return score, False
 
-def main():
+def main(song_directory,file_path,num_songs, output_file):
     # Initiate playlist with a base song and length
     START = time.time()
-    a = Playlist('song_test', "Future Islands/Singles/01 Seasons (Waiting On You).mp3", 3)
+    a = Playlist(song_directory, file_path, int(num_songs))
     a.sort_playlist()
 
     ordering = ['start'] + ['middle']*(len(a.playlist)-2) + ['end']
@@ -162,7 +161,15 @@ def main():
         try: output_song += make_transition(rp[i], rp[i+1])
         except IndexError: pass
 
-    render(output_song, 'fullMix.mp3', True)
+    render(output_song, output_file + '.mp3', True)
     print '\nTook %f seconds to compile and render playlist' %round(time.time()-START, 1)
 
-main()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('song_directory', help='Enter the base directory where your target music is (must only have music files and folder)')
+    parser.add_argument('file_path', help='Enter the file path of your song, excluding the base directory')
+    parser.add_argument('songs_number', help='Enter the number of songs to be mixed')
+    parser.add_argument('output_file', help='Enter the name of the file for output')
+    args = parser.parse_args()
+    main(args.song_directory,args.file_path,args.songs_number,args.output_file)
+
