@@ -4,7 +4,7 @@ from tune import Tune
 import id3reader
 import time
 from echonest.remix.action import render
-from tempo_adj import make_crossfade
+from tempo_adj import make_crossmatch
 from database import SongDatabase
 
 TEMPO_THRESHOLD = 2
@@ -141,20 +141,16 @@ def main():
     # [<tune.Tune instance at 0x7f8489b340e0>, 'end', 36, 146]]
 
     def make_transition(l1, l2):
-        # l1, l2 are lists of order [self.tune, self.position, start_bar_index, end_bar_index]
+        # l1, l2 are lists of order [Tune instance, self.position, start_bar_index, end_bar_index]
 
-        # Start cutting at the final_bar of the first song
+        # Start cutting at the final two bars of the first song
         final_bar = l1[0].bars[l1[3]-1: l1[3]+1]
 
         # Cut into the first two bars of the second song
         first_bar = l2[0].bars[l2[2]: l2[2]+2]
 
-        # Duration is length of the first two bars of the second song because
-        # it has to line up with the [i+2: end] bars.
-        duration = sum([i.duration for i in first_bar])
-
-        # Return iterable cross faded object
-        return make_crossfade(l1[0].tune, l2[0].tune, final_bar[0].start, first_bar[0].start, duration)
+        # Return iterable crossmatched object
+        return make_crossmatch(l1[0].tune, l2[0].tune, final_bar, first_bar)
 
     for i in range(len(rp)):
         if rp[i][1] == 'start':
