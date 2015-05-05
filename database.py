@@ -99,12 +99,14 @@ class SongDatabase():
                         time.sleep(60)
         
     def get_entry(self,filepath):
+        """gets entry of database based off of file path"""
         with self.con:
             cur = self.con.cursor(mdb.cursors.DictCursor)
             cur.execute("SELECT * FROM Songs WHERE Songs.File_Path LIKE " + "'" + self.escape(filepath) + "'")
             return cur.fetchone()
 
     def usable_songs(self):
+        """returns list of dictionaries corresponding to usable songs"""
         with self.con:
             cur = self.con.cursor(mdb.cursors.DictCursor)
             cur.execute("SELECT * FROM Songs WHERE Songs.Usable LIKE 1")
@@ -116,10 +118,12 @@ class SongDatabase():
             return res
 
     def get_pickle(self,p_path):
+        """opens pickle file"""
         output =  open(p_path,'rb')
         return pickle.load(output)
 
     def print_db(self):
+        """prints full database"""
         with self.con:
             cur = self.con.cursor(mdb.cursors.DictCursor)
             cur.execute("SELECT * FROM Songs")
@@ -127,7 +131,9 @@ class SongDatabase():
             print rows
 
     def escape(self, string):
+        """escapes the given string for database storage"""
         return self.con.escape_string(string)
 
     def unescape(self, string):
+        """unescapes the given string for usage"""
         return string.decode('string_escape')
