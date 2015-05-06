@@ -19,6 +19,6 @@ Other dependencies include:
 #Usage
 1. Install dependencies and acquire API keys
 2. Create mySQL database with the same arguments as seen in database.py and make a user with permissions. Our version makes "djdb" and user "phatuser" with access by "phat623"
-3. Run populate.py, being sure to have the same folder names for your music and your pickled files. Our version uses "song_test" for the songs and "tune_pickle" for the pickle files.
-4. Run playlist.py, specifying the song folder, the extension for the base song, the number of songs to be mixed, and the name of the output file. You can optionally add -eff for vocal additions
-5. Enjoy your mix! 
+3. Run populate.py, being sure to have the same folder names for your music and your pickled files. Our version uses "song_test" for the songs and "tune_pickle" for the pickle files. This will take a while, depending on the size of your music library.
+4. Run playlist.py, specifying the song folder, the extension for the base song, the number of songs to be mixed, and the name of the output file. You can optionally add -eff for vocal additions. NOTE: This program will need a fairly large collection of songs of similar tempos to run well, and be sure that the prompting song you give it is of a good, danceable tempo.
+5. Enjoy your mix!
