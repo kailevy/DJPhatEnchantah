@@ -5,11 +5,11 @@ from echonest.remix.action import render
 from tempo_adj import make_crossmatch
 from database import SongDatabase
 from tune import Tune
-# from pydub import AudioSegment
+from pydub import AudioSegment
 
 TEMPO_THRESHOLD = 2
 SCORE_THRESHOLD = 0.30
-TRAN_BARS = 3 #Number of bars to transition for
+TRAN_BARS = 2 #Number of bars to transition for
 
 class Playlist():
     def __init__(self, folder, baseSong, numberOfsongs):
@@ -178,8 +178,8 @@ def make_transition(l1, l2):
     return make_crossmatch(l1[0].tune, l2[0].tune, final_bar, first_bar)
 
 
-def add_effects(switch_durations):
-    """Kai can you write this docstring?"""
+def add_effects(switch_durations,output_file):
+    """Adds effects (from the folder 'hype') near every transition point, as well as at the end."""
     effect_dir = 'hype'
     mix = AudioSegment.from_mp3(output_file + '.mp3') - 3
     effect_list = []
@@ -196,7 +196,7 @@ def add_effects(switch_durations):
     #makes cumulative switch-timestamps, give or take 5 seconds
     for i in switch_durations:
         if i < 20:
-            switch_times.append((time_pointer + random.randint(-5,5)) * 1000)
+            switch_times.append((time_pointer + random.randint(-3,3)) * 1000)
         else: time_pointer += i
 
     #creates sections out of those timestamps, separating 5 second 'effect' intervals
