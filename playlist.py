@@ -132,8 +132,7 @@ def main(song_directory,file_path,num_songs, output_file, effects=False):
     # Add starting and ending indices of bars of each song in real_playlist
     for i in rp:
         print "Mixing %s" %i[0].songName
-        i[2], i[3] = i[0].choose_jump_point2(position=i[1])
-        # i[2], i[3] = i[0].choose_jump_point()
+        i[2], i[3] = i[0].choose_jump_point(position=i[1])
 
     # print rp: [[<tune.Tune instance at 0x7f848b1149e0>, 'start', 0, 66], 
     # [<tune.Tune instance at 0x7f8489d7cfc8>, 'middle', 14, 64], 
