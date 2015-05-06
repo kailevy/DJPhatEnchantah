@@ -1,10 +1,11 @@
 from pyechonest import *
-import os, argparse, time
+import os, argparse, time, random
 import id3reader
 from echonest.remix.action import render
 from tempo_adj import make_crossmatch
 from database import SongDatabase
 from tune import Tune
+from pydub import AudioSegment
 
 TEMPO_THRESHOLD = 2
 SCORE_THRESHOLD = 0.30
@@ -104,7 +105,7 @@ class Playlist():
         else:
             return score, False
 
-def main(song_directory,file_path,num_songs, output_file):
+def main(song_directory,file_path,num_songs, output_file, effects=False):
     # Initiate playlist with a base song and length
     START = time.time()
     a = Playlist(song_directory, file_path, int(num_songs))
@@ -151,17 +152,66 @@ def main(song_directory,file_path,num_songs, output_file):
         # Return iterable crossmatched object
         return make_crossmatch(l1[0].tune, l2[0].tune, final_bar, first_bar)
 
+    switch_durations = []
+    
     for i in range(len(rp)):
         if rp[i][1] == 'start':
-            output_song += rp[i][0].bars[: rp[i][3]-1]
+            add = rp[i][0].bars[: rp[i][3]-1]
+            output_song += add
+            switch_durations.append(sum([j.duration for j in add]))
         if rp[i][1] == 'middle':
-            output_song += rp[i][0].bars[rp[i][2]+2 : rp[i][3]-1]
+            add = rp[i][0].bars[rp[i][2]+2 : rp[i][3]-1]
+            output_song += add
+            switch_durations.append(sum([j.duration for j in add]))
         if rp[i][1] == 'end':
-            output_song += rp[i][0].bars[rp[i][2]+2 :]
-        try: output_song += make_transition(rp[i], rp[i+1])
+            add = rp[i][0].bars[rp[i][2]+2 :]
+            output_song += add
+            switch_durations.append(sum([j.duration for j in add]))
+        try: 
+            trans = make_transition(rp[i], rp[i+1])
+            output_song += trans[0]
+            switch_durations.append(trans[1])
         except IndexError: pass
 
     render(output_song, output_file + '.mp3', True)
+
+    #This part adds effects near the song transitions
+    if effects:
+        effect_dir = 'hype'
+        mix = AudioSegment.from_mp3(output_file + '.mp3') - 3
+        effect_list = []
+        #load effects except for end
+        for files in os.listdir(effect_dir):
+            if not files == 'end.wav':
+                effect_list.append(AudioSegment.from_wav(effect_dir + '/' + files) + 2)
+        mix_sections = []
+        hype_sections = []
+        time_pointer = 0
+        switch_times = [0]
+        #makes cumulative switch-timestamps, give or take 5 seconds
+        for i in switch_durations:
+            if i < 20:
+                switch_times.append((time_pointer + random.randint(-5,5)) * 1000)
+            else: time_pointer += i
+        #creates sections out of those timestamps, separating 5 second 'effect' intervals
+        for i in range(len(switch_times)-1):
+            mix_sections.append(mix[switch_times[i]:switch_times[i+1]-5000])
+            hype_sections.append(mix[switch_times[i+1]-5000:switch_times[i+1]])
+        hype_sections[0] = hype_sections[0] - 4
+        hype_sections[0] = hype_sections[0].overlay(random.choice(effect_list), position=0)
+        #puts in the first section and effect section
+        full_mix = mix_sections[0] + hype_sections[0]
+        #puts in following sections and effect sections
+        for i in range(1,len(hype_sections)):
+            full_mix += mix_sections[i]
+            hype_sections[i] = hype_sections[i] - 4
+            hype_sections[i] = hype_sections[i].overlay(random.choice(effect_list), position=0)
+            full_mix += hype_sections[i]
+        #adds last full section and effect
+        full_mix += mix[switch_times[-1]:] + AudioSegment.from_wav(effect_dir + '/end.wav')
+        full_mix.export(output_file+'.mp3',format='mp3')
+
+
     print '\nTook %f seconds to compile and render playlist' %round(time.time()-START, 1)
 
 if __name__ == '__main__':
@@ -170,6 +220,7 @@ if __name__ == '__main__':
     parser.add_argument('file_path', help='Enter the file path of your song, excluding the base directory')
     parser.add_argument('songs_number', help='Enter the number of songs to be mixed')
     parser.add_argument('output_file', help='Enter the name of the file for output')
+    parser.add_argument('--eff', action='store_true', help='Enter for whether you want effects')
     args = parser.parse_args()
-    main(args.song_directory,args.file_path,args.songs_number,args.output_file)
+    main(args.song_directory,args.file_path,args.songs_number,args.output_file,args.eff)
 

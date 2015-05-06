@@ -336,7 +336,7 @@ if __name__ == '__main__':
     parser.add_argument('fileName', help='Enter the file name of your song')
     args = parser.parse_args()
 
-    bs = Tune(args.fileName, args.songName, args.artist)
+    bs = Tune(args.fileName, args.artist, args.songName)
     # bars = bs.find_chorus_bars()
     bars = bs.choose_jump_point()
     print bars
