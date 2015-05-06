@@ -175,7 +175,6 @@ class Tune():
                 available.append(self.song_map[i])
             i += 1
 
-        print available
         verse_index = [i for i,j in enumerate(available) if j[2] == 'verse']
 
         # Find 6 second gap into a verse
