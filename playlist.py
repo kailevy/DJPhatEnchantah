@@ -17,11 +17,11 @@ class Playlist():
         #calling from database        
         self.db = SongDatabase(folder,'tune_pickle')
         self.usable_songs = self.db.usable_songs()
+        random.shuffle(self.usable_songs)
         self.build_playlist(folder+'/'+baseSong, self.length)
         
     def build_playlist(self, path_to_song, numberOfSongs):
         base_song = self.db.get_entry(path_to_song)
-        print base_song
         print 'Adding %s to playlist' % base_song['Title']
 
         if base_song['Usable']:
@@ -78,7 +78,7 @@ class Playlist():
             print 'Try another song.'
 
     def add(self, new_song):
-        tune = Tune(new_song['File_Path'], new_song['Title'], new_song['Artist'], new_song['Tempo'], self.db.get_pickle(new_song['Pickle_Path']))
+        tune = Tune(new_song['File_Path'], new_song['Artist'], new_song['Title'], new_song['Tempo'], self.db.get_pickle(new_song['Pickle_Path']))
         self.playlist.append(tune)
         self.added.append(new_song['File_Path'])
         print "Adding %s to playlist" %new_song['Title']
@@ -110,6 +110,7 @@ def main(song_directory,file_path,num_songs, output_file, effects=False):
     START = time.time()
     a = Playlist(song_directory, file_path, int(num_songs))
     a.sort_playlist()
+    tran_bars = 3 #Number of bars to transition for
 
     ordering = ['start'] + ['middle']*(len(a.playlist)-2) + ['end']
 
@@ -120,11 +121,12 @@ def main(song_directory,file_path,num_songs, output_file, effects=False):
     for i in range(len(a.playlist)):
         rp[i] = [a.playlist[i], ordering[i], 0, 0]
 
-
+    j = 1
     # Print playlist
-    print ''
+    print '\n===== PLAYLIST ORDER =====\n'
     for i in rp:
-        print i[0].songName, i[0].bpm, i[1]
+        print "%d. %s by %s" %(j, i[0].songName, i[0].artist)
+        j += 1
     print ''
 
     # Start the processing
@@ -134,36 +136,32 @@ def main(song_directory,file_path,num_songs, output_file, effects=False):
         print "Mixing %s" %i[0].songName
         i[2], i[3] = i[0].choose_jump_point(position=i[1])
 
-    # print rp: [[<tune.Tune instance at 0x7f848b1149e0>, 'start', 0, 66], 
-    # [<tune.Tune instance at 0x7f8489d7cfc8>, 'middle', 14, 64], 
-    # [<tune.Tune instance at 0x7f8489f35ea8>, 'middle', 37, 51], 
-    # [<tune.Tune instance at 0x7f8489b340e0>, 'end', 36, 146]]
-
     def make_transition(l1, l2):
         # l1, l2 are lists of order [Tune instance, self.position, start_bar_index, end_bar_index]
 
         # Start cutting at the final two bars of the first song
-        final_bar = l1[0].bars[l1[3]-1: l1[3]+1]
+        final_bar = l1[0].bars[l1[3]-(tran_bars-1): l1[3]+1] #from end-2 to end+1
 
         # Cut into the first two bars of the second song
-        first_bar = l2[0].bars[l2[2]: l2[2]+2]
+        first_bar = l2[0].bars[l2[2]: l2[2]+tran_bars]
 
         # Return iterable crossmatched object
         return make_crossmatch(l1[0].tune, l2[0].tune, final_bar, first_bar)
 
     switch_durations = []
+
     
     for i in range(len(rp)):
         if rp[i][1] == 'start':
-            add = rp[i][0].bars[: rp[i][3]-1]
+            add = rp[i][0].bars[: rp[i][3]-(tran_bars-1)] #from 0 to end-2
             output_song += add
             switch_durations.append(sum([j.duration for j in add]))
         if rp[i][1] == 'middle':
-            add = rp[i][0].bars[rp[i][2]+2 : rp[i][3]-1]
+            add = rp[i][0].bars[rp[i][2]+tran_bars : rp[i][3]-(tran_bars-1)] #from start+3 to end-2
             output_song += add
             switch_durations.append(sum([j.duration for j in add]))
         if rp[i][1] == 'end':
-            add = rp[i][0].bars[rp[i][2]+2 :]
+            add = rp[i][0].bars[rp[i][2]+tran_bars :] #from start+3
             output_song += add
             switch_durations.append(sum([j.duration for j in add]))
         try: 
