@@ -115,7 +115,7 @@ class SongDatabase():
                 d['File_Path'] = self.unescape(d['File_Path'])
                 d['Artist'] = self.unescape(d['Artist'])
                 d['Title'] = self.unescape(d['Title'])
-            return res
+            return [d for d in res]
 
     def get_pickle(self,p_path):
         """opens pickle file"""
