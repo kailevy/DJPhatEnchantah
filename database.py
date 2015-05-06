@@ -74,7 +74,6 @@ class SongDatabase():
                                     liveness = echo_song[0].audio_summary['liveness']
                                     energy = echo_song[0].audio_summary['energy']
                                     usable = False
-                                    # print tempo, danceability, liveness, energy
                                     try: 
                                         tune_obj = Tune(path,artist,song_name)
                                         usable = bool(tune_obj.song_map)
@@ -89,9 +88,6 @@ class SongDatabase():
                                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
                                         cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy, pickle_path))
                                     else: 
-                                        # pickle_path = self.pickle_dir + '/' + artist + '_' + song_name + '.txt'
-                                        # output = open(pickle_path,'wb')
-                                        # pickle.dump(tune_obj.song_map, output)
                                         insert = "INSERT IGNORE INTO Songs(File_Path, Artist, Title, Usable, Tempo, Danceability, Liveness, Energy, Pickle_Path) \
                                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)"
                                         cur.execute(insert,(path_db, artist_db, song_name_db, usable, tempo, danceability, liveness, energy))
