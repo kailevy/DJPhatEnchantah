@@ -117,13 +117,13 @@ class Tune():
                     chorus = []
             i += 1
 
-        print 'original', self.song_map
         self.song_map = self.group_map(sorted([i for i in self.song_map if i[0] != i[1]], key=lambda x:x[0]))
 
         return self.song_map
 
     def find_chorus_freq(self, split_pars):
-        """Finds chorus based off of similar word frequencies"""
+        """Finds chorus based off of similar word frequencies between different
+        sections of the song."""
         par_freqs = []
         chorus = []
 
@@ -138,9 +138,8 @@ class Tune():
         return chorus
 
     def choose_jump_point(self, position='start'):
-        """Attempts to choose the bars of the track by taking the start of one song, and 
-        setting the end to be after the 2nd + chorus as long as there is no vocals immediately
-        after"""
+        """Uses find_start and find_tail to find the best possible position(s)
+        in the song to fade into and/or out of."""
         self.position = position
 
         if self.position == 'start':
@@ -153,9 +152,8 @@ class Tune():
             return a[0], b[1]
 
     def find_start(self):
-        """Finds the part to cut INTO the song from another song.
-        Has to be before the verse before the second chorus, because find_tail 
-        finds anything after the second chorus.""" 
+        """Finds the part to cut INTO the song from another song. Has to be
+        before the second chorus.""" 
         chor_count = 0
         i = 0
         if self.chorus_count == 1:
@@ -175,7 +173,6 @@ class Tune():
                 available.append(self.song_map[i])
             i += 1
 
-        print available
         verse_index = [i for i,j in enumerate(available) if j[2] == 'verse']
 
         # Find 6 second gap into a verse
@@ -227,6 +224,8 @@ class Tune():
         return self.get_bars(0, available[final_chorus][1])
 
     def group_map(self, oldmap):
+        """Given a messy song map, group verses and choruses together to
+        condense the map for ease of navigation."""
         newmap = []
         i = 0
 
@@ -244,52 +243,16 @@ class Tune():
 
         return newmap
 
-    def find_chorus_bars(self):
-        """Finds and returns the start and end bars of each chorus found in the
-        song map"""
-        all_chorus = []
-        choruses = [i for i in self.song_map if i[2] == 'chorus']
-        i = 0
-
-        # Complicated while loop to record start and end times of full choruses
-        # taking into account the fact that one chorus may be split into two 
-        # paragraphs
-        while i < len(choruses)-1:
-            start = choruses[i][0]
-            end = choruses[i][1]
-            next_start = choruses[i+1][0]
-            while next_start-end<=5000 and i+1<len(choruses):
-                i += 1
-                try: end, next_start = choruses[i][1], choruses[i+1][0]
-                except IndexError: 
-                    all_chorus.append([start/1000.0, choruses[i][1]/1000.0])
-                    break
-            else:
-                all_chorus.append([start/1000.0, end/1000.0])
-                if next_start and i == len(choruses)-2:
-                    all_chorus.append([next_start/1000.0, choruses[i+1][1]/1000.0])
-            i += 1
-
-        for j in range(len(all_chorus)):
-            all_chorus[j] = self.get_bars(all_chorus[j][0], all_chorus[j][1])
-
-        # Returns only choruses that are longer than four bars (other results
-        # are anomalies)
-        return [i for i in all_chorus if i[1] - i[0] > 4]
-
     def get_bars(self, start_time, end_time=None):
-        """Finds and returns the indices of the bars that start and end of the 
-        chorus. This function works by, keeping track of the scores of the current
+        """Finds and returns the indices of the bars at the start_time and
+        end_time. This function works by keeping track of the scores of the current
         and previous bars. If the current score becomes higher, it means that the
-        loop has passed over the right bar, and we save the previous bar's index"""
-
+        loop has passed over the correct bar, and we save the previous bar's 
+        index"""
         startScore, endScore = 10000000, 10000000
         first_bar = 0
         last_bar = len(self.bars)-1
         found_first = False
-
-        # print self.fade
-
 
         for i, bar in enumerate(self.bars):
             if not found_first:
@@ -304,10 +267,6 @@ class Tune():
                     last_bar = i-1
                     break
 
-            # prevEndScore, endScore = endScore, abs(bar.start - self.fade - end_time)
-            # if endScore > prevEndScore: 
-            #     last_bar = i-1
-            #     break
         if end_time:
             return max(0, first_bar-2), last_bar
         else:
@@ -320,11 +279,5 @@ if __name__ == '__main__':
     parser.add_argument('fileName', help='Enter the file name of your song')
     args = parser.parse_args()
 
-    bs = Tune(args.fileName, args.artist, args.songName)
-    bars = bs.choose_jump_point(position='middle')
-    print len(bs.bars)
-    print bars
-    for i in bars: print bs.bars[i].start
-    print bs.song_map
-    # render(bs.bars[bars[0]:bars[1]+4], 'play.mp3', True)
+    
 
