@@ -183,6 +183,7 @@ def add_effects(switch_durations):
     effect_dir = 'hype'
     mix = AudioSegment.from_mp3(output_file + '.mp3') - 3
     effect_list = []
+
     #load effects except for end
     for files in os.listdir(effect_dir):
         if not files == 'end.wav':
@@ -191,11 +192,13 @@ def add_effects(switch_durations):
     hype_sections = []
     time_pointer = 0
     switch_times = [0]
+
     #makes cumulative switch-timestamps, give or take 5 seconds
     for i in switch_durations:
         if i < 20:
             switch_times.append((time_pointer + random.randint(-5,5)) * 1000)
         else: time_pointer += i
+
     #creates sections out of those timestamps, separating 5 second 'effect' intervals
     for i in range(len(switch_times)-1):
         mix_sections.append(mix[switch_times[i]:switch_times[i+1]-5000])
@@ -204,12 +207,14 @@ def add_effects(switch_durations):
     hype_sections[0] = hype_sections[0].overlay(random.choice(effect_list), position=0)
     #puts in the first section and effect section
     full_mix = mix_sections[0] + hype_sections[0]
+
     #puts in following sections and effect sections
     for i in range(1,len(hype_sections)):
         full_mix += mix_sections[i]
         hype_sections[i] = hype_sections[i] - 4
         hype_sections[i] = hype_sections[i].overlay(random.choice(effect_list), position=0)
         full_mix += hype_sections[i]
+
     #adds last full section and effect
     full_mix += mix[switch_times[-1]:] + AudioSegment.from_wav(effect_dir + '/end.wav')
     full_mix.export(output_file+'.mp3',format='mp3')
@@ -239,6 +244,6 @@ if __name__ == '__main__':
     parser.add_argument('output_file', help='Enter the name of the output file')
     parser.add_argument('--eff', action='store_true', help='Enter for whether you want effects')
     args = parser.parse_args()
-    
+
     main(args.song_directory,args.file_path,args.songs_number,args.output_file,args.eff)
 
