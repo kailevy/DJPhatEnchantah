@@ -37,7 +37,7 @@ class Tune():
 
     def __init__(self,path_to_song, artist, name, tempo=None, song_map=None):
         # Set all necessary attributes to allow for fruitful analysis
-        self.tune = audio.LocalAudioFile(path_to_song)
+        self.tune = audio.LocalAudioFile(path_to_song, verbose=False)
         if not tempo:
             self.track = pyechonest.track.track_from_filename(path_to_song)
             self.bpm = getattr(self.track,'tempo')
@@ -58,9 +58,6 @@ class Tune():
             lyrics, lrc = self.find_lyrics()
             if lyrics and lrc:
                 self.get_song_map(lyrics,lrc) 
-
-        # Set further attributes through class methods
-
         self.chorus_count = len([i for i in self.song_map if i[2] == 'chorus'])
 
     def find_lyrics(self):
@@ -72,8 +69,6 @@ class Tune():
         except KeyError:
             lyrics = None
             lrc = None
-            # print 'Song could not be processed.'
-            # sys.exit()
         return (lyrics, lrc)
 
     def get_json(self):
@@ -132,8 +127,6 @@ class Tune():
         par_freqs = []
         chorus = []
 
-        # print split_pars
-
         for par in split_pars:
             par_freqs.append(get_words(par))
 
@@ -157,7 +150,6 @@ class Tune():
         elif self.position == 'middle':
             a = self.find_start()
             b = self.find_tail()
-            # print a[0], b[1]
             return a[0], b[1]
 
     def find_start(self):
@@ -169,7 +161,7 @@ class Tune():
         if self.chorus_count == 1:
             CHORUS_THRESHOLD = self.chorus_count - 1
         else:
-            CHORUS_THRESHOLD = math.ceil(self.chorus_count / 2.0)+1
+            CHORUS_THRESHOLD = self.chorus_count//2.0 + 1
 
         # Filter out self.song_map so that the only parts available are before
         # the second chorus
@@ -188,14 +180,12 @@ class Tune():
 
         # Find 6 second gap into a verse
         if len(verse_index) <= 1:
-            # print 'first verse'
             return self.get_bars(self.song_map[0][0], None)
         else:
             for i in verse_index:
                 start_verse = available[i][0]
                 end_last_section = available[i-1][1]
                 if abs(start_verse - end_last_section) >= 4:
-                    # print 'found one'
                     return self.get_bars(available[i][0], None)
 
 
@@ -209,7 +199,7 @@ class Tune():
         if self.chorus_count == 1:
             CHORUS_THRESHOLD = self.chorus_count - 1
         else:
-            CHORUS_THRESHOLD = math.ceil(self.chorus_count /  2.0)+1
+            CHORUS_THRESHOLD = self.chorus_count//2.0 + 1
 
         # Remove sections from the available list up to but not including the 
         # second chorus. Uncomment print statements to see which option the 
@@ -220,24 +210,19 @@ class Tune():
             if chor_count < CHORUS_THRESHOLD:
                 available.pop(0)
 
-        print available
         chorus_index = [i for i,j in enumerate(available) if j[2] == 'chorus']
 
         if len(chorus_index) == 1:
-            # print 'first chorus'
             return self.get_bars(0, available[chorus_index[0]][1])
         else:
-            print 'else'
             for i in chorus_index:
                 end_chorus = available[i][1]
                 try: 
                     start_next_section = available[i+1][0]
                     if abs(start_next_section - end_chorus) >= 2:
-                        # print 'found one'
                         return self.get_bars(0, (available[i][1]+start_next_section)/2.0)
                 except IndexError: pass 
 
-        print 'last one'
         final_chorus = chorus_index[-1]
         return self.get_bars(0, available[final_chorus][1])
 
@@ -285,9 +270,6 @@ class Tune():
                     all_chorus.append([next_start/1000.0, choruses[i+1][1]/1000.0])
             i += 1
 
-        # print choruses
-        # print all_chorus
-
         for j in range(len(all_chorus)):
             all_chorus[j] = self.get_bars(all_chorus[j][0], all_chorus[j][1])
 
@@ -327,9 +309,9 @@ class Tune():
             #     last_bar = i-1
             #     break
         if end_time:
-            return first_bar, last_bar
+            return max(0, first_bar-2), last_bar
         else:
-            return first_bar,len(self.bars)-1
+            return max(0, first_bar-2),len(self.bars)-1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
