@@ -7,7 +7,7 @@ from database import SongDatabase
 from tune import Tune
 from pydub import AudioSegment
 
-TEMPO_THRESHOLD = 2
+TEMPO_THRESHOLD = 4
 SCORE_THRESHOLD = 0.30
 TRAN_BARS = 2 #Number of bars to transition for
 
@@ -196,7 +196,7 @@ def add_effects(switch_durations,output_file):
     #makes cumulative switch-timestamps, give or take 5 seconds
     for i in switch_durations:
         if i < 20:
-            switch_times.append((time_pointer + random.randint(-3,3)) * 1000)
+            switch_times.append((time_pointer + random.randint(0,8)) * 1000)
         else: time_pointer += i
 
     #creates sections out of those timestamps, separating 5 second 'effect' intervals
