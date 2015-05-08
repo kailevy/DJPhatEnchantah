@@ -99,7 +99,24 @@ class SongDatabase():
         with self.con:
             cur = self.con.cursor(mdb.cursors.DictCursor)
             cur.execute("SELECT * FROM Songs WHERE Songs.File_Path LIKE " + "'" + self.escape(filepath) + "'")
-            return cur.fetchone()
+            d = cur.fetchone()
+            d['File_Path'] = self.unescape(d['File_Path'])
+            d['Artist'] = self.unescape(d['Artist'])
+            d['Title'] = self.unescape(d['Title'])
+            return d
+
+    def get_entry_by_name(self,song_name, artist_name):
+        """gets the entries of the database for a given song name and artist name"""
+        with self.con:
+            cur = self.con.cursor(mdb.cursors.DictCursor)
+            # cur.execute("SELECT * FROM Songs WHERE Songs.Title LIKE " + "'" + self.escape(song_name) + "'" + "SELECTAND Songs.Artist ")
+            select = "SELECT * FROM Songs WHERE Title=%s AND Artist=%s"
+            cur.execute(select,(self.escape(song_name),self.escape(artist_name)))
+            d = cur.fetchone()
+            d['File_Path'] = self.unescape(d['File_Path'])
+            d['Artist'] = self.unescape(d['Artist'])
+            d['Title'] = self.unescape(d['Title'])
+            return d
 
     def usable_songs(self):
         """returns list of dictionaries corresponding to usable songs"""

@@ -12,23 +12,23 @@ SCORE_THRESHOLD = 0.30
 TRAN_BARS = 2 #Number of bars to transition for
 
 class Playlist():
-    def __init__(self, folder, baseSong, numberOfsongs):
+    def __init__(self, folder, title, artist, numberOfsongs):
         self.length = numberOfsongs
         self.dirs = os.listdir('./'+folder)
         self.db = SongDatabase(folder,'tune_pickle')
         self.usable_songs = self.db.usable_songs()
         random.shuffle(self.usable_songs)
-        self.build_playlist(folder+'/'+baseSong, self.length)
+        self.build_playlist(title, artist, self.length)
         
-    def build_playlist(self, path_to_song, numberOfSongs):
+    def build_playlist(self, title, artist, numberOfSongs):
         """Using the base song, build a playlist of songs with scores and tempo
         compatible with the base song"""
 
-        base_song = self.db.get_entry(path_to_song)
+        base_song = self.db.get_entry_by_name(title,artist)
         print '\nAdding %s to playlist' % base_song['Title']
 
         if base_song['Usable']:
-            self.baseSong = Tune(path_to_song, base_song['Artist'], base_song['Title'], base_song['Tempo'], 
+            self.baseSong = Tune(base_song['File_Path'], base_song['Artist'], base_song['Title'], base_song['Tempo'], 
                             self.db.get_pickle(base_song['Pickle_Path']))
             self.playlist = [self.baseSong]
             self.added = [base_song['File_Path']]
@@ -220,10 +220,10 @@ def add_effects(switch_durations,output_file):
     full_mix.export(output_file+'.mp3',format='mp3')
 
 
-def main(song_directory,file_path,num_songs, output_file, effects=False):
+def main(song_directory,title, artist,num_songs, output_file, effects=False):
     START = time.time()
 
-    a = Playlist(song_directory, file_path, int(num_songs))
+    a = Playlist(song_directory, title, artist, int(num_songs))
     a.sort_playlist()
     a.splice_songs()
     switch_durations = a.mix_songs()
@@ -239,11 +239,13 @@ def main(song_directory,file_path,num_songs, output_file, effects=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('song_directory', help='Enter the base directory where your target music is (must only have music files and folder)')
-    parser.add_argument('file_path', help='Enter the file path of your song, excluding the base directory')
+    # parser.add_argument('file_path', help='Enter the file path of your song, excluding the base directory')
+    parser.add_argument('title', help='Enter the title of your song')
+    parser.add_argument('artist', help='Enter the artist of your song')
     parser.add_argument('songs_number', help='Enter the number of songs to be mixed')
     parser.add_argument('output_file', help='Enter the name of the output file')
     parser.add_argument('--eff', action='store_true', help='Enter for whether you want effects')
     args = parser.parse_args()
 
-    main(args.song_directory,args.file_path,args.songs_number,args.output_file,args.eff)
+    main(args.song_directory,args.title,args.artist,args.songs_number,args.output_file,args.eff)
 
